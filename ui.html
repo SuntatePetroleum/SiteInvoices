@@ -1,0 +1,1387 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SSP Invoices">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Sunstate Site Invoices</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#DA2127; --red-d:#B3171D; --orange:#F08A1F; --yellow:#F9C012;
+  --ink:#1E1A19; --ink2:#47403D; --muted:#7D7470; --faint:#A69D99;
+  --line:#ECE6E1; --bg:#F6F3F0; --card:#FFFFFF; --soft:#FBF8F6;
+  --green:#17794A; --green-bg:#E6F4EC; --amber:#9A5200; --amber-bg:#FFF1DC;
+  --grad:linear-gradient(120deg,#DA2127 0%,#E9531F 52%,#F39A1B 100%);
+  --grad-sun:linear-gradient(90deg,#F9C012 0%,#F08A1F 50%,#DA2127 100%);
+  --shadow:0 1px 2px rgba(30,26,25,.05),0 6px 20px rgba(30,26,25,.06);
+  --r:18px; --cond:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+a{color:inherit;text-decoration:none}
+img{display:block}
+.hidden{display:none!important}
+.sm{font-size:13px}.xs{font-size:12px}.muted{color:var(--muted)}.b{font-weight:700}
+
+/* app bar */
+.appbar{position:sticky;top:0;z-index:40;background:#fff;padding:calc(env(safe-area-inset-top) + 8px) 16px 8px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 0 var(--line)}
+.appbar::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:3px;background:var(--grad-sun)}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.brand img{width:36px;height:36px;flex:none}
+.wm{display:flex;flex-direction:column;font-family:var(--cond);font-weight:800;font-size:17px;line-height:15px;letter-spacing:.02em}
+.wm-y{color:var(--yellow)}.wm-r{color:var(--red)}
+.chip{display:inline-flex;align-items:center;gap:6px;max-width:52vw;padding:7px 12px;border-radius:999px;background:var(--soft);border:1px solid var(--line);font-size:13px;font-weight:650;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip span{overflow:hidden;text-overflow:ellipsis}
+.chip-dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip svg{flex:none}
+
+/* layout */
+.page{max-width:640px;margin:0 auto;padding:18px 16px calc(110px + env(safe-area-inset-bottom))}
+.page.wide{max-width:880px}
+.stack>*+*{margin-top:14px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid rgba(30,26,25,.04)}
+.card-pad{padding:16px}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:16px 16px 6px}
+.card-h h2,.h2{font-family:var(--cond);font-weight:700;font-size:21px;letter-spacing:.01em;text-transform:uppercase}
+.h1{font-family:var(--cond);font-weight:800;font-size:30px;line-height:1.05;letter-spacing:.01em;text-transform:uppercase}
+.lead{color:var(--muted);font-size:14px;margin-top:4px}
+.back{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-size:14px;font-weight:600;margin-bottom:10px}
+
+/* hero */
+.hero{position:relative;overflow:hidden;border-radius:22px;padding:22px 20px 20px;color:#fff;background:var(--grad);box-shadow:0 10px 30px rgba(218,33,39,.22)}
+.hero .mark{position:absolute;right:-34px;bottom:-40px;width:170px;height:170px;opacity:.16;filter:brightness(0) invert(1)}
+.hero-k{font-size:14px;opacity:.92;font-weight:600}
+.hero-t{font-family:var(--cond);font-weight:800;font-size:34px;line-height:1.02;text-transform:uppercase;letter-spacing:.01em;margin-top:2px;max-width:85%}
+.hero-s{font-size:13px;opacity:.88;margin-top:6px}
+.hero.dark{background:linear-gradient(140deg,#2A2321 0%,#1E1A19 100%);box-shadow:0 10px 30px rgba(30,26,25,.22)}
+.hero.dark .mark{opacity:1;filter:none;width:150px;height:150px;right:-30px;bottom:-34px;opacity:.9}
+.hero .big{font-family:var(--cond);font-weight:800;font-size:56px;line-height:1}
+.hero-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;position:relative}
+
+/* actions */
+.actions{display:grid;gap:12px}
+.action{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:16px;background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid rgba(30,26,25,.04)}
+.action:active{transform:scale(.99)}
+.action-ic{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--grad);color:#fff}
+.action-ic.ic-dark{background:var(--ink)}
+.action-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.action-txt strong{font-size:17px}
+.action-txt small{color:var(--muted);font-size:13px;margin-top:2px}
+.action>svg{color:var(--faint);flex:none}
+
+/* lists */
+.list{list-style:none}
+.row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-top:1px solid var(--line);width:100%;text-align:left}
+.list>li:first-child>.row,.list>.row:first-child{border-top:0}
+button.row:active,a.row:active{background:var(--soft)}
+.row-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--soft);color:var(--ink2);flex:none}
+.row-main{flex:1;min-width:0}
+.row-t{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-s{font-size:13px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row>svg{color:var(--faint);flex:none}
+.empty{padding:26px 16px 28px;text-align:center;color:var(--muted);font-size:14px}
+.empty svg{display:block;color:var(--faint);margin:0 auto 8px}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill-new{background:var(--amber-bg);color:var(--amber)}
+.pill-done{background:var(--green-bg);color:var(--green)}
+.pill-count{background:var(--red);color:#fff;min-width:24px;justify-content:center}
+.pill-grey{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:14px;font-weight:700;font-size:15px;background:var(--soft);color:var(--ink);border:1px solid var(--line);white-space:nowrap}
+.btn:active{transform:scale(.985)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn-primary{background:var(--grad);color:#fff;border:0;box-shadow:0 6px 16px rgba(218,33,39,.25)}
+.btn-dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn-white{background:#fff;color:var(--ink);border:0}
+.btn-ghost-w{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.28)}
+.btn-danger{background:#fff;color:var(--red);border-color:#F3C9CA}
+.btn-sm{padding:8px 12px;font-size:13px;border-radius:11px}
+.btn-block{width:100%}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn-row>.btn{flex:1}
+.link{color:var(--red);font-weight:700;font-size:14px}
+
+/* bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:flex-end;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--faint);padding:6px 0}
+.nav a.on{color:var(--red)}
+.nav .fab{flex:none;width:62px;height:62px;margin-top:-26px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;box-shadow:0 8px 20px rgba(218,33,39,.35);border:4px solid #fff;padding:0}
+
+/* forms */
+.field{display:block}
+.field+.field{margin-top:14px}
+.label{display:block;font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+.label em{font-style:normal;color:var(--faint);font-weight:600}
+.input{width:100%;padding:13px 14px;border-radius:13px;border:1.5px solid var(--line);background:#fff;font-size:16px;outline:none;transition:border-color .15s,box-shadow .15s}
+.input:focus{border-color:var(--orange);box-shadow:0 0 0 4px rgba(240,138,31,.15)}
+.input.filled{background:#FFFBF2;border-color:#F6D79A}
+textarea.input{min-height:76px;resize:vertical}
+.money{position:relative}.money span{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:700}.money .input{padding-left:28px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+.grid2 .field+.field{margin-top:0}
+.err{background:#FDEDED;border:1px solid #F5C6C7;color:#9B1C1F;padding:11px 14px;border-radius:12px;font-size:14px;display:flex;gap:8px;align-items:flex-start}
+.note{background:var(--amber-bg);color:#6B3B00;padding:11px 14px;border-radius:12px;font-size:13px;display:flex;gap:8px;align-items:flex-start}
+.note.ok{background:var(--green-bg);color:#0E5634}
+.note svg,.err svg{flex:none;margin-top:1px}
+
+/* photo capture */
+.drop{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.drop button{background:#fff;border:2px dashed #E3D9D3;border-radius:var(--r);padding:26px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:700;color:var(--ink2)}
+.drop button svg{color:var(--red)}
+.drop button small{color:var(--muted);font-weight:500;font-size:12px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.thumb{position:relative;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:#eee;border:1px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .n{position:absolute;left:6px;bottom:6px;background:rgba(30,26,25,.75);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px}
+.thumb .x{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:50%;background:rgba(30,26,25,.75);color:#fff;display:grid;place-items:center}
+.thumb.add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed #E3D9D3;background:#fff;color:var(--red);font-size:12px;font-weight:700}
+.thumb.busy{display:grid;place-items:center;color:var(--muted);font-size:12px}
+
+/* sticky footer */
+.footbar{position:fixed;left:0;right:0;bottom:0;z-index:45;background:rgba(246,243,240,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.footbar-in{max-width:640px;margin:0 auto;display:flex;gap:10px}
+.footbar-in .btn{flex:1}.footbar-in .btn-primary{flex:2}
+
+/* progress */
+.center{text-align:center;padding:40px 10px}
+.bar{height:8px;border-radius:99px;background:#EDE5DF;overflow:hidden;margin:16px auto 0;max-width:280px}
+.bar>div{height:100%;background:var(--grad-sun);border-radius:99px;transition:width .3s}
+.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.pulse{animation:pulse 1.4s ease-in-out infinite}@keyframes pulse{50%{opacity:.45}}
+.badge-ok{width:92px;height:92px;border-radius:50%;margin:0 auto 18px;display:grid;place-items:center;color:#fff;background:var(--grad);box-shadow:0 12px 30px rgba(218,33,39,.3)}
+.sym-lg{width:92px;height:92px;margin:0 auto 14px}
+
+/* tabs & chips */
+.tabs{display:flex;background:#EDE7E2;border-radius:13px;padding:4px;gap:4px}
+.tabs button{flex:1;padding:9px 8px;border-radius:10px;font-weight:700;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px}
+.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.scroller{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.scroller::-webkit-scrollbar{display:none}
+.sel{flex:none;padding:8px 13px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-weight:700;font-size:13px;color:var(--ink2)}
+.sel.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* sheet */
+.scrim{position:fixed;inset:0;z-index:60;background:rgba(20,16,15,.48);display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+@keyframes fade{from{opacity:0}}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:94vh;border-radius:22px 22px 0 0;display:flex;flex-direction:column;animation:up .2s ease-out;overflow:hidden}
+@keyframes up{from{transform:translateY(30px);opacity:.6}}
+.sheet-h{display:flex;align-items:center;gap:10px;padding:16px 16px 12px;background:#fff;border-bottom:1px solid var(--line)}
+.sheet-h .t{flex:1;min-width:0}
+.sheet-b{overflow-y:auto;padding:16px;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.iconbtn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--soft);border:1px solid var(--line);color:var(--ink2);flex:none}
+@media(min-width:700px){.scrim{align-items:center}.sheet{border-radius:22px;max-height:88vh}}
+.dialog{max-width:420px}
+.pages img{width:100%;border-radius:12px;border:1px solid var(--line);background:#fff}
+.pages a+a{margin-top:10px;display:block}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:9px 14px;font-size:14px}
+.dl dt{color:var(--muted);font-weight:600}
+.dl dd{font-weight:650;word-break:break-word}
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.photos a{aspect-ratio:3/4;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#eee}
+.photos img{width:100%;height:100%;object-fit:cover}
+
+/* toast & busy */
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:80;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:calc(100% - 32px);animation:fade .2s}
+.toast.bad{background:var(--red-d)}
+.busy{position:fixed;inset:0;z-index:90;background:rgba(246,243,240,.9);display:grid;place-items:center;padding:20px}
+.busy .card{padding:26px 22px;text-align:center;width:100%;max-width:340px}
+.footer{text-align:center;color:var(--faint);font-size:12px;margin-top:26px}
+.footer b{font-family:var(--cond);letter-spacing:.04em;font-weight:700}
+.sep{height:1px;background:var(--line);margin:14px 0}
+.tag{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:5px 6px 5px 11px;font-size:13px;font-weight:600;margin:4px 6px 0 0}
+.tag button{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.selectwrap select{width:100%;padding:10px 12px;border-radius:11px;border:1.5px solid var(--line);background:#fff;font-size:15px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+/* =========================================================== basics */
+const $app = document.getElementById('app');
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('ssp.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('ssp.' + k, JSON.stringify(v)); } catch (e) {} },
+};
+
+function h(tag, props) {
+  const el = document.createElement(tag);
+  if (props) for (const k in props) {
+    const v = props[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'style') el.style.cssText = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (k === 'value') el.value = v;
+    else if (v === true) el.setAttribute(k, '');
+    else el.setAttribute(k, v);
+  }
+  for (let i = 2; i < arguments.length; i++) add(el, arguments[i]);
+  return el;
+}
+function add(el, c) {
+  if (c == null || c === false) return;
+  if (Array.isArray(c)) { c.forEach((x) => add(el, x)); return; }
+  el.appendChild(c instanceof Node ? c : document.createTextNode(String(c)));
+}
+
+const ICONS = {
+  home: '<path d="M3 10.5 12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H4.5A1.5 1.5 0 0 1 3 20z"/>',
+  camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>',
+  images: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  chevR: '<polyline points="9 18 15 12 9 6"/>',
+  chevL: '<polyline points="15 18 9 12 15 6"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  edit: '<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  refresh: '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+  pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+  ext: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  fuel: '<path d="M3 22V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v17"/><line x1="2" y1="22" x2="15" y2="22"/><rect x="6" y="6" width="5" height="4" rx=".5"/><path d="M14 9h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>',
+  spark: '<path d="M12 3l1.9 4.9L19 9.8l-5.1 1.9L12 17l-1.9-5.3L5 9.8l5.1-1.9z"/><path d="M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z"/>',
+  sliders: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+  alert: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+  archive: '<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  store: '<path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M10 20v-5h4v5"/>',
+};
+function icon(name, size) {
+  const s = size || 20;
+  const span = document.createElement('span');
+  span.style.cssText = 'display:inline-flex;line-height:0';
+  span.innerHTML = '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+  return span.firstChild;
+}
+
+/* =========================================================== formatting */
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function bneDate(iso) { const d = new Date(iso); return isNaN(d) ? null : new Date(d.getTime() + 10 * 3600e3); }
+function fmtDay(ymd) { if (!ymd) return ''; const [y, m, d] = ymd.split('-').map(Number); const dt = new Date(Date.UTC(y, m - 1, d)); return DAYS[dt.getUTCDay()] + ' ' + d + ' ' + MONTHS[m - 1].slice(0, 3) + (y !== thisYear() ? ' ' + y : ''); }
+function fmtLongDay(ymd) { const [y, m, d] = ymd.split('-').map(Number); const dt = new Date(Date.UTC(y, m - 1, d)); return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dt.getUTCDay()] + ' ' + d + ' ' + MONTHS[m - 1] + ' ' + y; }
+function fmtMonth(ym) { const [y, m] = ym.split('-').map(Number); return MONTHS[m - 1].slice(0, 3) + ' ' + y; }
+function fmtMonthLong(ym) { const [y, m] = ym.split('-').map(Number); return MONTHS[m - 1] + ' ' + y; }
+function thisYear() { return Number((S.cfg && S.cfg.today || '2000').slice(0, 4)); }
+function fmtWhen(iso) {
+  const d = bneDate(iso); if (!d) return '';
+  const ymd = d.toISOString().slice(0, 10);
+  let hr = d.getUTCHours(); const mi = String(d.getUTCMinutes()).padStart(2, '0'); const ap = hr >= 12 ? 'pm' : 'am'; hr = hr % 12 || 12;
+  const t = hr + ':' + mi + ap;
+  if (S.cfg && ymd === S.cfg.today) return 'Today ' + t;
+  return fmtDay(ymd) + ', ' + t;
+}
+function fmtMoney(v) { if (v === '' || v == null) return ''; const n = Number(v); return isNaN(n) ? '' : '$' + n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+function greeting() { const hr = (new Date().getUTCHours() + 10) % 24; return hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'; }
+function safeName(s) { return String(s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 90) || 'file'; }
+function docketName(n) { return String(n || '').replace(/_/g, ' '); }
+const DOCKET_SUP = { IOR: 'IOR', Viva: 'Viva Energy', Unknown: 'Other' };
+
+/* =========================================================== state */
+const S = {
+  cfg: null, cfgErr: '',
+  route: [],
+  siteId: LS.get('site', ''),
+  by: LS.get('by', ''),
+  recent: null, recentErr: '',
+  suppliers: [],
+  draft: null,
+  up: { status: 'idle' },
+  off: { ov: null, ovErr: '', loading: false, months: {}, month: {}, inv: {}, filter: 'new', tab: 'invoices', dk: null, dkErr: '', dkOpen: null, dkPhotos: {}, pendingMark: null },
+  sheet: null, toast: null, busy: null,
+};
+
+function currentSite() { return S.cfg && S.cfg.sites.find((s) => s.id === S.siteId && !s.archived) || null; }
+function siteName(id) { const s = S.cfg && S.cfg.sites.find((x) => x.id === id); return s ? s.name : id; }
+
+/* =========================================================== api */
+async function api(path, opts) {
+  opts = opts || {};
+  const init = { method: opts.method || 'GET', headers: {}, credentials: 'same-origin' };
+  if (opts.json !== undefined) { init.method = opts.method || 'POST'; init.headers['content-type'] = 'application/json'; init.body = JSON.stringify(opts.json); }
+  if (opts.body) { init.body = opts.body; if (opts.type) init.headers['content-type'] = opts.type; }
+  let res;
+  try { res = await fetch(path, init); } catch (e) { throw new Error('No connection. Check your signal and try again.'); }
+  const ct = res.headers.get('content-type') || '';
+  const data = ct.includes('json') ? await res.json().catch(() => null) : null;
+  if (res.status === 401 && S.cfg && (path.startsWith('/api/office') || path.startsWith('/api/staff'))) {
+    if (path.startsWith('/api/office')) S.cfg.officeOk = false; else S.cfg.staffOk = false;
+    S.busy = null;
+    render();
+  }
+  if (!res.ok) { const err = new Error((data && data.error) || 'Something went wrong (' + res.status + ').'); err.status = res.status; throw err; }
+  return data;
+}
+async function fetchBytes(url) {
+  const res = await fetch(url, { credentials: 'same-origin' });
+  if (!res.ok) throw new Error('Could not download a photo (' + res.status + ').');
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+function toast(msg, bad) {
+  S.toast = { msg, bad: !!bad };
+  render();
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { S.toast = null; render(); }, 2800);
+}
+
+/* =========================================================== routing */
+function parseHash() { return (location.hash || '#/').slice(1).split('/').filter(Boolean).map(decodeURIComponent); }
+function go(hash) { if (location.hash === hash) onRoute(); else location.hash = hash; }
+window.addEventListener('hashchange', onRoute);
+window.addEventListener('beforeunload', (e) => { if (S.up.status === 'sending') { e.preventDefault(); e.returnValue = ''; } });
+
+function onRoute() {
+  S.route = parseHash();
+  S.sheet = null;
+  const r = S.route;
+  if (r[0] === 'office') {
+    if (officeAllowed()) {
+      if ((!S.off.ov || S.off.ovStale) && !S.off.loading) loadOverview();
+      if (r[1] === 'site' && r[2]) { loadMonths(r[2]); }
+      if (r[1] === 'sites' && S.cfg.docketsLinked && !S.off.dk) loadDocketLocations();
+      if (r[1] === 'site' && S.off.tab === 'dockets' && !S.off.dk) loadDocketLocations();
+    }
+  } else if (staffAllowed() && currentSite()) {
+    if (r[0] === 'upload' && !S.draft && S.up.status === 'idle') S.draft = newDraft();
+    if (!r[0]) loadRecent();
+  }
+  window.scrollTo(0, 0);
+  render();
+}
+function officeAllowed() { return S.cfg && (!S.cfg.officePin || S.cfg.officeOk); }
+function staffAllowed() { return S.cfg && (!S.cfg.staffPin || S.cfg.staffOk || S.cfg.officeOk); }
+
+/* =========================================================== render */
+function render() {
+  const active = document.activeElement;
+  const focusId = active && active.id ? active.id : null;
+  const selStart = focusId && 'selectionStart' in active ? active.selectionStart : null;
+  const office = S.route[0] === 'office';
+  const v = view();
+  const nodes = [header(office), v];
+  if (showNav()) nodes.push(nav(office));
+  if (S.sheet) nodes.push(sheetView());
+  if (S.busy) nodes.push(busyView());
+  if (S.toast) nodes.push(h('div', { class: 'toast' + (S.toast.bad ? ' bad' : ''), role: 'status' }, S.toast.msg));
+  $app.replaceChildren.apply($app, nodes);
+  if (focusId) {
+    const el = document.getElementById(focusId);
+    if (el && el !== document.activeElement) { el.focus({ preventScroll: true }); try { if (selStart != null) el.setSelectionRange(selStart, selStart); } catch (e) {} }
+  }
+}
+function showNav() {
+  if (!S.cfg) return false;
+  if (S.route[0] === 'upload') return false;
+  if (S.route[0] === 'office' && !officeAllowed()) return true;
+  return true;
+}
+
+function header(office) {
+  let chip = null;
+  const site = currentSite();
+  if (office) chip = h('span', { class: 'chip chip-dark' }, icon('briefcase', 14), h('span', null, 'Office'));
+  else if (site) chip = h('button', { class: 'chip', onclick: () => go('#/site'), 'aria-label': 'Change site' }, icon('pin', 14), h('span', null, site.name));
+  return h('header', { class: 'appbar' },
+    h('a', { class: 'brand', href: office ? '#/office' : '#/', 'aria-label': 'Sunstate Petroleum home' },
+      h('img', { src: '/assets/symbol.png', alt: '', width: 36, height: 36 }),
+      h('div', { class: 'wm' }, h('span', { class: 'wm-y' }, 'SUNSTATE'), h('span', { class: 'wm-r' }, 'PETROLEUM'))),
+    chip);
+}
+
+function nav(office) {
+  const r = S.route;
+  const homeOn = !office && r[0] !== 'site';
+  return h('nav', { class: 'nav' },
+    h('a', { href: '#/', class: homeOn ? 'on' : '' }, icon('home', 22), 'Home'),
+    h('a', { href: '#/upload', class: 'fab', 'aria-label': 'Upload an invoice', onclick: (e) => { e.preventDefault(); startUpload(); } }, icon('camera', 26)),
+    h('a', { href: '#/office', class: office ? 'on' : '' }, icon('briefcase', 22), 'Office'));
+}
+
+function view() {
+  if (!S.cfg) {
+    if (S.cfgErr) return h('main', { class: 'page' }, h('div', { class: 'center' }, h('div', { class: 'err' }, icon('alert', 18), S.cfgErr), h('div', { style: 'margin-top:14px' }, h('button', { class: 'btn', onclick: boot }, icon('refresh', 16), 'Try again'))));
+    return h('main', { class: 'page' }, h('div', { class: 'center' }, h('img', { class: 'sym-lg pulse', src: '/assets/symbol-lg.png', alt: '' })));
+  }
+  const r = S.route;
+  if (r[0] === 'office') {
+    if (!officeAllowed()) return loginView('office');
+    if (r[1] === 'site' && r[2]) return officeSiteView(r[2]);
+    if (r[1] === 'sites') return manageSitesView();
+    return officeHomeView();
+  }
+  if (!staffAllowed()) return loginView('staff');
+  if (r[0] === 'site' || !currentSite()) return pickSiteView();
+  if (r[0] === 'upload') return uploadView();
+  return staffHomeView();
+}
+
+function busyView() {
+  const b = S.busy;
+  const pct = b.total ? Math.round(100 * b.done / b.total) : 0;
+  return h('div', { class: 'busy' }, h('div', { class: 'card' },
+    h('img', { class: 'sym-lg pulse', src: '/assets/symbol-lg.png', alt: '', style: 'width:64px;height:64px' }),
+    h('p', { class: 'b' }, b.title),
+    b.total ? h('p', { class: 'sm muted', style: 'margin-top:4px' }, b.done + ' of ' + b.total) : null,
+    b.total ? h('div', { class: 'bar' }, h('div', { style: 'width:' + pct + '%' })) : null));
+}
+
+/* =========================================================== login */
+function loginView(role) {
+  const office = role === 'office';
+  const id = office ? 'pin-office' : 'pin-staff';
+  const err = S.loginErr && S.loginErr.role === role ? S.loginErr.msg : '';
+  async function submit(e) {
+    e.preventDefault();
+    const input = document.getElementById(id);
+    const pin = input.value;
+    if (!pin) return;
+    btn.disabled = true;
+    try {
+      await api('/api/auth', { json: { role, pin } });
+      S.loginErr = null;
+      if (office) { S.cfg.officeOk = true; S.off.ov = null; } else S.cfg.staffOk = true;
+      onRoute();
+    } catch (ex) {
+      S.loginErr = { role, msg: ex.message };
+      render();
+      const again = document.getElementById(id); if (again) { again.value = ''; again.focus(); }
+    }
+  }
+  const errBox = err ? h('div', { class: 'err', style: 'margin-top:12px' }, icon('alert', 18), err) : null;
+  const btn = h('button', { class: 'btn btn-primary btn-block', type: 'submit', style: 'margin-top:16px' }, icon('lock', 18), 'Unlock');
+  return h('main', { class: 'page' },
+    h('div', { class: 'card card-pad', style: 'text-align:center;padding:30px 20px;margin-top:10px' },
+      h('img', { class: 'sym-lg', src: '/assets/symbol-lg.png', alt: '' }),
+      h('h1', { class: 'h1' }, office ? 'Office access' : 'Site access'),
+      h('p', { class: 'lead' }, office ? 'Enter the office passcode to see invoices from every site.' : 'Enter your site PIN. You only need to do this once on this phone.'),
+      h('form', { onsubmit: submit, style: 'margin-top:18px;text-align:left' },
+        h('label', { class: 'label', for: id }, office ? 'Office passcode' : 'Site PIN'),
+        h('input', { class: 'input', id, type: 'password', autocomplete: 'current-password', inputmode: office ? null : 'numeric', autofocus: true }),
+        errBox, btn)));
+}
+
+/* =========================================================== staff: site */
+function pickSiteView() {
+  const sites = S.cfg.sites.filter((s) => !s.archived);
+  const search = h('input', { class: 'input', id: 'site-search', placeholder: 'Search sites', type: 'search', autocomplete: 'off' });
+  const list = h('div', { class: 'list' });
+  function fill() {
+    const q = search.value.trim().toLowerCase();
+    const shown = sites.filter((s) => !q || s.name.toLowerCase().includes(q));
+    list.replaceChildren.apply(list, shown.length ? shown.map((s) => h('button', { class: 'row', onclick: () => chooseSite(s.id) },
+      h('span', { class: 'row-ic' }, icon('store', 20)),
+      h('span', { class: 'row-main' }, h('span', { class: 'row-t', style: 'display:block' }, s.name)),
+      s.id === S.siteId ? h('span', { class: 'pill pill-done' }, icon('check', 12), 'Current') : icon('chevR', 18))) : [h('div', { class: 'empty' }, 'No sites match.')]);
+  }
+  search.addEventListener('input', fill);
+  fill();
+  return h('main', { class: 'page stack' },
+    currentSite() ? h('a', { class: 'back', href: '#/' }, icon('chevL', 18), 'Back') : null,
+    h('div', null, h('h1', { class: 'h1' }, 'Which site are you at?'), h('p', { class: 'lead' }, 'Invoices you upload are filed under this site. This phone will remember it.')),
+    sites.length ? h('div', { class: 'card' }, sites.length > 6 ? h('div', { style: 'padding:12px 12px 4px' }, search) : null, list)
+      : h('div', { class: 'card' }, h('div', { class: 'empty' }, icon('store', 30), h('p', { class: 'b', style: 'color:var(--ink)' }, 'No sites set up yet'), h('p', null, 'The office adds sites under Office → Manage sites.'))));
+}
+function chooseSite(id) { S.siteId = id; LS.set('site', id); S.recent = null; go('#/'); }
+
+/* =========================================================== staff: home */
+async function loadRecent() {
+  const site = currentSite(); if (!site) return;
+  try {
+    const d = await api('/api/staff/recent?site=' + encodeURIComponent(site.id));
+    if (S.siteId === site.id) { S.recent = d.items; S.recentErr = ''; }
+  } catch (e) { S.recentErr = e.message; }
+  render();
+}
+
+function staffHomeView() {
+  const site = currentSite();
+  const first = (S.by || '').split(' ')[0];
+  return h('main', { class: 'page stack' },
+    h('section', { class: 'hero' },
+      h('img', { class: 'mark', src: '/assets/symbol-lg.png', alt: '' }),
+      h('p', { class: 'hero-k' }, greeting() + (first ? ', ' + first : '')),
+      h('h1', { class: 'hero-t' }, site.name),
+      h('p', { class: 'hero-s' }, fmtLongDay(S.cfg.today))),
+    h('div', { class: 'actions' },
+      h('button', { class: 'action', onclick: startUpload },
+        h('span', { class: 'action-ic' }, icon('file', 26)),
+        h('span', { class: 'action-txt' }, h('strong', null, 'Supplier invoice'), h('small', null, 'Photograph it and send it to the office')),
+        icon('chevR', 20)),
+      h('a', { class: 'action', href: S.cfg.docketsUrl, target: '_blank', rel: 'noopener' },
+        h('span', { class: 'action-ic ic-dark' }, icon('fuel', 24)),
+        h('span', { class: 'action-txt' }, h('strong', null, 'Fuel delivery docket'), h('small', null, 'Opens the Fuel Dockets app')),
+        icon('ext', 18))),
+    h('section', { class: 'card' },
+      h('div', { class: 'card-h' }, h('h2', null, 'Sent from this site'), h('button', { class: 'link', onclick: () => { S.recent = null; render(); loadRecent(); } }, 'Refresh')),
+      recentList()),
+    h('p', { class: 'footer' }, h('b', null, 'SUNSTATE PETROLEUM'), ' · Site Invoices'));
+}
+
+function recentList() {
+  if (S.recentErr && !S.recent) return h('div', { class: 'empty' }, S.recentErr);
+  if (!S.recent) return h('div', { class: 'empty pulse' }, 'Loading…');
+  if (!S.recent.length) return h('div', { class: 'empty' }, icon('file', 28), 'Nothing sent yet this month.');
+  return h('div', { class: 'list' }, S.recent.map((r) => h('div', { class: 'row' },
+    h('span', { class: 'row-ic' }, icon('file', 19)),
+    h('span', { class: 'row-main' },
+      h('span', { class: 'row-t', style: 'display:block' }, r.supplier),
+      h('span', { class: 'row-s', style: 'display:block' }, [r.invoiceNo ? '#' + r.invoiceNo : null, plural(r.pages, 'page'), fmtWhen(r.uploadedAt), r.by].filter(Boolean).join(' · '))),
+    r.status === 'processed' ? h('span', { class: 'pill pill-done' }, 'Processed') : h('span', { class: 'pill pill-new' }, 'Sent'))));
+}
+
+/* =========================================================== staff: upload */
+function newDraft() {
+  return { pages: [], preparing: 0, f: { supplier: '', invoiceNo: '', invoiceDate: S.cfg.today, total: '', note: '', by: S.by || '' }, touched: {}, filled: {}, auto: { status: 'idle' }, slot: null, err: '' };
+}
+function startUpload() {
+  if (!S.cfg) return;
+  if (S.up.status === 'done' || S.up.status === 'error') S.up = { status: 'idle' };
+  if (!S.draft) S.draft = newDraft();
+  if (!S.suppliers.length) api('/api/staff/suppliers').then((d) => { S.suppliers = d.suppliers || []; if (S.route[0] === 'upload') { const dl = document.getElementById('sup-list'); if (dl) dl.replaceChildren.apply(dl, S.suppliers.map((s) => h('option', { value: s }))); } }).catch(() => {});
+  go('#/upload');
+}
+function cancelUpload() {
+  const d = S.draft;
+  if (d && (d.pages.length || d.f.supplier) && S.up.status !== 'done') {
+    openDialog('Discard this invoice?', 'The photos and details you entered will be cleared.', [
+      { label: 'Keep editing' },
+      { label: 'Discard', danger: true, run: () => { discardDraft(); go('#/'); } }]);
+    return;
+  }
+  discardDraft(); go('#/');
+}
+function discardDraft() {
+  if (S.draft) S.draft.pages.forEach((p) => URL.revokeObjectURL(p.url));
+  S.draft = null; S.up = { status: 'idle' };
+}
+
+function uploadView() {
+  if (S.up.status === 'sending' || S.up.status === 'error') return sendingView();
+  if (S.up.status === 'done') return doneView();
+  const d = S.draft || (S.draft = newDraft());
+  const cam = h('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'hidden', id: 'in-cam', onchange: (e) => { addPages(e.target.files); e.target.value = ''; } });
+  const lib = h('input', { type: 'file', accept: 'image/*', multiple: true, class: 'hidden', id: 'in-lib', onchange: (e) => { addPages(e.target.files); e.target.value = ''; } });
+
+  const photos = d.pages.length || d.preparing
+    ? h('div', { class: 'thumbs' },
+      d.pages.map((p, i) => h('div', { class: 'thumb' },
+        h('img', { src: p.url, alt: 'Page ' + (i + 1) }),
+        h('span', { class: 'n' }, 'Page ' + (i + 1)),
+        h('button', { class: 'x', 'aria-label': 'Remove page ' + (i + 1), onclick: () => removePage(i) }, icon('x', 14)))),
+      d.preparing ? h('div', { class: 'thumb busy' }, h('span', { class: 'pulse' }, 'Preparing…')) : null,
+      h('button', { class: 'thumb add', onclick: () => cam.click() }, icon('camera', 24), 'Add page'),
+      h('button', { class: 'thumb add', onclick: () => lib.click() }, icon('images', 24), 'From photos'))
+    : h('div', { class: 'drop' },
+      h('button', { onclick: () => cam.click() }, icon('camera', 30), 'Take photo', h('small', null, 'Use the camera')),
+      h('button', { onclick: () => lib.click() }, icon('images', 30), 'Choose photos', h('small', null, 'From your library')));
+
+  const field = (key, label, attrs, opt) => {
+    const input = h(attrs.tag || 'input', Object.assign({ class: 'input' + (d.filled[key] && !d.touched[key] ? ' filled' : ''), id: 'f-' + key, value: d.f[key] }, attrs, { tag: null }));
+    input.addEventListener('input', () => { d.f[key] = input.value; d.touched[key] = true; input.classList.remove('filled'); syncSend(); });
+    let ctl = input;
+    if (key === 'total') ctl = h('div', { class: 'money' }, h('span', null, '$'), input);
+    return h('label', { class: 'field', for: 'f-' + key }, h('span', { class: 'label' }, label, opt ? h('em', null, ' (optional)') : null), ctl);
+  };
+
+  let autoNote = null;
+  if (d.auto.status === 'reading') autoNote = h('div', { class: 'note' }, h('span', { class: 'spin', style: 'display:inline-flex' }, icon('spark', 16)), 'Reading the invoice to fill in the details…');
+  else if (d.auto.status === 'done') autoNote = h('div', { class: 'note ok' }, icon('spark', 16), h('span', null, d.auto.count ? 'Filled in from the photo. Check the highlighted fields before sending.' : 'Could not read the details from the photo. Please type them in.'));
+  else if (d.auto.status === 'failed') autoNote = h('div', { class: 'note' }, icon('alert', 16), h('span', null, 'Could not read the invoice automatically. Please type the details in.'));
+
+  const sendBtn = h('button', { class: 'btn btn-primary', id: 'send-btn', onclick: send }, 'Send to office', icon('chevR', 18));
+  setTimeout(syncSend, 0);
+
+  return h('main', { class: 'page stack', style: 'padding-bottom:calc(120px + env(safe-area-inset-bottom))' },
+    h('div', null,
+      h('h1', { class: 'h1' }, 'Supplier invoice'),
+      h('p', { class: 'lead' }, 'Take a photo of every page, flat and in good light. Filed under ', h('b', null, currentSite().name), '.')),
+    cam, lib,
+    h('section', { class: 'card card-pad' }, h('p', { class: 'label', style: 'margin-bottom:10px' }, 'Photos', d.pages.length ? h('em', null, ' · ' + plural(d.pages.length, 'page')) : null), photos),
+    autoNote,
+    h('section', { class: 'card card-pad' },
+      field('supplier', 'Supplier', { list: 'sup-list', autocomplete: 'off', autocapitalize: 'words', placeholder: 'e.g. Coca-Cola, Bidvest' }),
+      h('datalist', { id: 'sup-list' }, S.suppliers.map((s) => h('option', { value: s }))),
+      h('div', { class: 'grid2', style: 'margin-top:14px' },
+        field('invoiceNo', 'Invoice no.', { autocomplete: 'off', autocapitalize: 'characters' }, true),
+        field('invoiceDate', 'Invoice date', { type: 'date' })),
+      h('div', { style: 'margin-top:14px' }, field('total', 'Total inc GST', { inputmode: 'decimal', autocomplete: 'off', placeholder: '0.00' }, true)),
+      h('div', { style: 'margin-top:14px' }, field('note', 'Note for the office', { tag: 'textarea', rows: 2, placeholder: 'e.g. short delivery, damaged stock' }, true)),
+      h('div', { class: 'sep' }),
+      field('by', 'Your name', { autocomplete: 'name', autocapitalize: 'words' })),
+    d.err ? h('div', { class: 'err', id: 'draft-err' }, icon('alert', 18), d.err) : null,
+    h('div', { class: 'footbar' }, h('div', { class: 'footbar-in' },
+      h('button', { class: 'btn', onclick: cancelUpload }, 'Cancel'), sendBtn)));
+}
+function syncSend() {
+  const b = document.getElementById('send-btn'); const d = S.draft;
+  if (!b || !d) return;
+  const ready = d.pages.length && !d.preparing && d.f.supplier.trim() && d.f.by.trim();
+  b.style.opacity = ready ? '1' : '.55';
+}
+
+async function addPages(fileList) {
+  const d = S.draft; if (!d) return;
+  const files = Array.from(fileList || []).filter((f) => /^image\//.test(f.type) || /\.(jpe?g|png|heic|heif|webp)$/i.test(f.name));
+  if (!files.length) return;
+  d.err = '';
+  for (const f of files) {
+    if (d.pages.length >= 30) { toast('That is the most pages one invoice can have.', true); break; }
+    d.preparing++; render();
+    try {
+      const out = await compressImage(f, 2200, 0.85);
+      if (S.draft !== d) return;
+      d.pages.push({ blob: out.blob, url: URL.createObjectURL(out.blob), w: out.w, h: out.h, sent: false });
+    } catch (e) { toast('One photo could not be opened. Try taking it again.', true); }
+    d.preparing--;
+    if (d.slot) d.pages.forEach((p) => { p.sent = false; });
+  }
+  render();
+  if (S.cfg.autofill && d.auto.status === 'idle' && d.pages.length) runAutofill();
+}
+function removePage(i) {
+  const d = S.draft; const p = d.pages.splice(i, 1)[0];
+  if (p) URL.revokeObjectURL(p.url);
+  d.pages.forEach((x) => { x.sent = false; });
+  render();
+}
+
+function compressImage(file, max, quality) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let w = img.naturalWidth, hh = img.naturalHeight;
+      if (Math.max(w, hh) > max) { const k = max / Math.max(w, hh); w = Math.round(w * k); hh = Math.round(hh * k); }
+      const c = document.createElement('canvas'); c.width = w; c.height = hh;
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, hh); ctx.drawImage(img, 0, 0, w, hh);
+      URL.revokeObjectURL(url);
+      c.toBlob((b) => b ? resolve({ blob: b, w, h: hh }) : reject(new Error('encode')), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    img.src = url;
+  });
+}
+async function blobToBase64(blob) {
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  let s = ''; const CH = 0x8000;
+  for (let i = 0; i < buf.length; i += CH) s += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
+  return btoa(s);
+}
+
+/* ---------- auto-fill: reads the photo through Fuel Dockets' Claude proxy */
+const AUTOFILL_PROMPT = 'These photos are the pages of one supplier invoice (or delivery docket) received at an Australian service station. ' +
+  'Read them and return the details as JSON only, with no other text:\n' +
+  '{"supplier":"trading name of the business that issued the invoice, short and without Pty Ltd","invoiceNo":"invoice or document number","invoiceDate":"YYYY-MM-DD","total":"total amount payable including GST as a plain number, e.g. 1234.50"}\n' +
+  'The supplier is the company that sent the invoice, not the customer (the customer is the service station). Use null for anything you cannot read clearly. Dates on Australian invoices are day/month/year.';
+
+async function runAutofill() {
+  const d = S.draft; if (!d || !d.pages.length) return;
+  d.auto = { status: 'reading' }; render();
+  try {
+    const pages = d.pages.slice(0, 3);
+    const imgs = [];
+    for (const p of pages) { const small = await compressImage(p.blob, 1500, 0.8); imgs.push(await blobToBase64(small.blob)); }
+    const body = { model: S.cfg.autofillModel, max_tokens: 300, messages: [{ role: 'user', content: imgs.map((b) => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b } })).concat([{ type: 'text', text: AUTOFILL_PROMPT }]) }] };
+    const res = await api('/api/staff/autofill', { json: body });
+    const text = ((res && res.content) || []).map((b) => b.text || '').join('');
+    const m = text.match(/\{[\s\S]*\}/);
+    const out = m ? JSON.parse(m[0]) : {};
+    if (S.draft !== d) return;
+    let count = 0;
+    const put = (k, v) => { if (v == null || v === '' || d.touched[k]) return; d.f[k] = String(v); d.filled[k] = true; count++; };
+    put('supplier', matchSupplier(out.supplier));
+    put('invoiceNo', out.invoiceNo ? String(out.invoiceNo).slice(0, 40) : '');
+    if (out.invoiceDate && /^\d{4}-\d{2}-\d{2}$/.test(out.invoiceDate)) put('invoiceDate', out.invoiceDate);
+    if (out.total != null && !isNaN(Number(String(out.total).replace(/[$,]/g, '')))) put('total', Number(String(out.total).replace(/[$,]/g, '')).toFixed(2));
+    d.auto = { status: 'done', count };
+  } catch (e) {
+    if (S.draft === d) d.auto = { status: 'failed' };
+  }
+  if (S.route[0] === 'upload' && S.up.status === 'idle') render();
+}
+function normSup(s) { return String(s || '').toLowerCase().replace(/\b(pty|ltd|limited|australia|aust|the|co|inc)\b/g, '').replace(/[^a-z0-9]/g, ''); }
+function matchSupplier(name) {
+  if (!name) return '';
+  name = String(name).replace(/[\s,]*\b(pty\.?\s*ltd\.?|pty\.?\s*limited|limited|ltd\.?)\s*$/i, '').trim();
+  const n = normSup(name);
+  if (!n) return String(name).slice(0, 80);
+  for (const s of S.suppliers) {
+    const k = normSup(s);
+    if (k && (k === n || (k.length >= 4 && (n.includes(k) || k.includes(n))) || lev(k, n) <= 2)) return s;
+  }
+  return String(name).slice(0, 80);
+}
+function lev(a, b) {
+  if (Math.abs(a.length - b.length) > 3) return 9;
+  const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = dp[0]; dp[0] = i;
+    for (let j = 1; j <= b.length; j++) { const t = dp[j]; dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = t; }
+  }
+  return dp[b.length];
+}
+
+/* ---------- send */
+async function send() {
+  const d = S.draft; if (!d) return;
+  const missing = !d.pages.length ? 'Add a photo of the invoice.' : d.preparing ? 'Wait for the photos to finish preparing.' : !d.f.supplier.trim() ? 'Enter the supplier.' : !d.f.by.trim() ? 'Enter your name so the office knows who sent it.' : '';
+  if (missing) { d.err = missing; render(); const e = document.getElementById('draft-err'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  d.err = '';
+  S.by = d.f.by.trim(); LS.set('by', S.by);
+  const site = currentSite();
+  S.up = { status: 'sending', done: d.pages.filter((p) => p.sent).length, total: d.pages.length, msg: 'Starting…' };
+  render();
+  try {
+    if (!d.slot || d.slot.site !== site.id) {
+      const start = await api('/api/staff/start', { json: { site: site.id, supplier: d.f.supplier, invoiceNo: d.f.invoiceNo } });
+      if (start.duplicate && !d.dupOk) {
+        S.up = { status: 'idle' }; render();
+        const dup = start.duplicate;
+        openDialog('Already sent?', 'Invoice ' + (dup.invoiceNo ? '#' + dup.invoiceNo + ' ' : '') + 'from ' + dup.supplier + ' was sent ' + fmtWhen(dup.uploadedAt).replace(/^Today/, 'today') + (dup.by ? ' by ' + dup.by : '') + '. Send it again anyway?', [
+          { label: 'Cancel' },
+          { label: 'Send again', primary: true, run: () => { d.dupOk = true; send(); } }]);
+        return;
+      }
+      d.slot = { site: site.id, id: start.id, month: start.month };
+      d.pages.forEach((p) => { p.sent = false; });
+    }
+    for (let i = 0; i < d.pages.length; i++) {
+      if (d.pages[i].sent) continue;
+      S.up.msg = 'Uploading page ' + (i + 1) + ' of ' + d.pages.length; render();
+      await api('/api/staff/page/' + [d.slot.site, d.slot.month, d.slot.id, i + 1].map(encodeURIComponent).join('/'), { method: 'PUT', body: d.pages[i].blob, type: 'image/jpeg' });
+      d.pages[i].sent = true;
+      S.up.done = d.pages.filter((p) => p.sent).length; render();
+    }
+    S.up.msg = 'Finishing…'; render();
+    const fin = await api('/api/staff/finish', { json: Object.assign({ site: d.slot.site, month: d.slot.month, id: d.slot.id, pages: d.pages.length }, d.f) });
+    S.up = { status: 'done', record: fin.record };
+    d.pages.forEach((p) => URL.revokeObjectURL(p.url));
+    S.draft = null; S.recent = null;
+    if (fin.record && fin.record.supplier && !S.suppliers.includes(fin.record.supplier)) S.suppliers.unshift(fin.record.supplier);
+  } catch (e) {
+    S.up = Object.assign({}, S.up, { status: 'error', error: e.message });
+  }
+  render();
+}
+
+function sendingView() {
+  const u = S.up;
+  const pct = u.total ? Math.round(100 * (u.done || 0) / u.total) : 0;
+  if (u.status === 'error') {
+    return h('main', { class: 'page' }, h('div', { class: 'center' },
+      h('div', { class: 'badge-ok', style: 'background:#fff;color:var(--red);box-shadow:var(--shadow)' }, icon('alert', 44)),
+      h('h1', { class: 'h1' }, 'Not sent yet'),
+      h('p', { class: 'lead', style: 'max-width:340px;margin:8px auto 0' }, u.error),
+      h('p', { class: 'sm muted', style: 'margin-top:8px' }, 'Your photos are still here. Pages already uploaded will not be sent twice.'),
+      h('div', { class: 'btn-row', style: 'max-width:360px;margin:22px auto 0' },
+        h('button', { class: 'btn', onclick: () => { S.up = { status: 'idle' }; render(); } }, 'Back to edit'),
+        h('button', { class: 'btn btn-primary', onclick: send }, icon('refresh', 16), 'Try again'))));
+  }
+  return h('main', { class: 'page' }, h('div', { class: 'center' },
+    h('img', { class: 'sym-lg spin', src: '/assets/symbol-lg.png', alt: '', style: 'animation-duration:1.6s' }),
+    h('h1', { class: 'h1' }, 'Sending'),
+    h('p', { class: 'lead' }, u.msg || ''),
+    h('div', { class: 'bar' }, h('div', { style: 'width:' + pct + '%' })),
+    h('p', { class: 'xs muted', style: 'margin-top:10px' }, 'Keep this screen open until it finishes.')));
+}
+
+function doneView() {
+  const r = S.up.record || {};
+  return h('main', { class: 'page' },
+    h('div', { class: 'center', style: 'padding-bottom:10px' },
+      h('div', { class: 'badge-ok' }, icon('check', 48)),
+      h('h1', { class: 'h1' }, 'Sent to the office'),
+      h('p', { class: 'lead' }, 'Filed under ', h('b', null, siteName(r.site)), '.')),
+    h('section', { class: 'card card-pad' }, h('dl', { class: 'dl' },
+      h('dt', null, 'Supplier'), h('dd', null, r.supplier || ''),
+      r.invoiceNo ? [h('dt', null, 'Invoice no.'), h('dd', null, r.invoiceNo)] : null,
+      r.invoiceDate ? [h('dt', null, 'Invoice date'), h('dd', null, fmtDay(r.invoiceDate))] : null,
+      r.total ? [h('dt', null, 'Total'), h('dd', null, fmtMoney(r.total))] : null,
+      h('dt', null, 'Pages'), h('dd', null, String(r.pages || '')))),
+    h('div', { class: 'btn-row', style: 'margin-top:18px' },
+      h('button', { class: 'btn', onclick: () => { S.up = { status: 'idle' }; go('#/'); } }, 'Done'),
+      h('button', { class: 'btn btn-primary', onclick: () => { S.up = { status: 'idle' }; S.draft = newDraft(); render(); window.scrollTo(0, 0); } }, icon('camera', 18), 'Upload another')));
+}
+
+/* =========================================================== sheets & dialogs */
+function openDialog(title, text, actions) { S.sheet = { kind: 'dialog', title, text, actions }; render(); }
+function closeSheet() { S.sheet = null; render(); }
+function sheetView() {
+  const s = S.sheet;
+  let inner;
+  if (s.kind === 'dialog') {
+    inner = h('div', { class: 'sheet dialog', role: 'dialog', 'aria-modal': 'true', onclick: (e) => e.stopPropagation() },
+      h('div', { class: 'sheet-b' },
+        h('h2', { class: 'h2' }, s.title),
+        s.text ? h('p', { class: 'lead', style: 'margin-top:6px;font-size:15px' }, s.text) : null,
+        s.body || null,
+        h('div', { class: 'btn-row', style: 'margin-top:18px' }, s.actions.map((a) => h('button', {
+          class: 'btn' + (a.primary ? ' btn-primary' : '') + (a.danger ? ' btn-danger' : ''),
+          onclick: async () => { if (a.keepOpen) { a.run && a.run(); return; } S.sheet = null; render(); if (a.run) await a.run(); },
+        }, a.label)))));
+  } else if (s.kind === 'invoice') inner = invoiceSheet(s);
+  return h('div', { class: 'scrim', onclick: closeSheet }, inner);
+}
+
+/* =========================================================== office: data */
+async function loadOverview() {
+  S.off.loading = true; S.off.ovErr = ''; render();
+  try { S.off.ov = await api('/api/office/overview'); S.off.ovStale = false; }
+  catch (e) { S.off.ovErr = e.message; }
+  S.off.loading = false; render();
+}
+async function loadMonths(site) {
+  try {
+    const d = await api('/api/office/months?site=' + encodeURIComponent(site));
+    S.off.months[site] = d.months;
+    if (!S.off.month[site]) S.off.month[site] = d.months[0];
+    render();
+    loadInvoices(site, S.off.month[site]);
+  } catch (e) { toast(e.message, true); }
+}
+async function loadInvoices(site, month) {
+  const key = site + '|' + month;
+  try {
+    const d = await api('/api/office/invoices?site=' + encodeURIComponent(site) + '&month=' + encodeURIComponent(month));
+    S.off.inv[key] = d.invoices;
+  } catch (e) { S.off.inv[key] = { error: e.message }; }
+  render();
+}
+async function loadDocketLocations() {
+  S.off.dk = 'loading'; S.off.dkErr = '';
+  try { const d = await api('/api/office/dockets/locations'); S.off.dk = d.locations; }
+  catch (e) { S.off.dk = null; S.off.dkErr = e.message; }
+  render();
+}
+function refreshOffice() { S.off.ov = null; S.off.inv = {}; S.off.dk = null; S.off.dkPhotos = {}; onRoute(); }
+function pageUrl(r, n, download) { return '/api/office/page/' + [r.site, r.month, r.id, n].map(encodeURIComponent).join('/') + (download ? '?download=' + encodeURIComponent(download) : ''); }
+function updateLocalRecord(rec) {
+  const key = rec.site + '|' + rec.month;
+  const list = S.off.inv[key];
+  if (Array.isArray(list)) { const i = list.findIndex((x) => x.id === rec.id); if (i >= 0) list[i] = rec; }
+  S.off.ovStale = true; // counts changed; reloaded when the office home is next shown
+}
+
+/* =========================================================== office: home */
+function officeHomeView() {
+  const o = S.off.ov;
+  const head = h('div', { style: 'display:flex;align-items:flex-end;justify-content:space-between;gap:10px' },
+    h('div', null, h('h1', { class: 'h1' }, 'Office'), h('p', { class: 'lead' }, 'Supplier invoices from every site.')),
+    h('button', { class: 'iconbtn', onclick: refreshOffice, 'aria-label': 'Refresh' }, icon('refresh', 18)));
+  if (!o) {
+    return h('main', { class: 'page stack wide' }, head,
+      S.off.ovErr ? h('div', { class: 'err' }, icon('alert', 18), S.off.ovErr) : h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading sites…')));
+  }
+  const sites = o.sites.filter((s) => !s.archived || s.newCount);
+  const newAll = [];
+  sites.forEach((s) => s.newRecords.forEach((r) => newAll.push(Object.assign({ siteName: s.name }, r))));
+  const pinWarn = !S.cfg.officePin ? h('div', { class: 'note' }, icon('lock', 16), h('span', null, 'Anyone with the link can open this office screen. Add an OFFICE_PIN secret in Cloudflare to lock it (see the README).')) : null;
+
+  if (!sites.length) {
+    return h('main', { class: 'page stack wide' }, head, pinWarn,
+      h('section', { class: 'card card-pad', style: 'text-align:center;padding:28px 18px' },
+        h('img', { class: 'sym-lg', src: '/assets/symbol-lg.png', alt: '' }),
+        h('h2', { class: 'h2' }, 'Add your sites to get started'),
+        h('p', { class: 'lead', style: 'max-width:380px;margin:6px auto 16px' }, 'Staff pick their site the first time they open the app, and every invoice is filed under it.'),
+        h('a', { class: 'btn btn-primary', href: '#/office/sites' }, icon('plus', 18), 'Add sites')));
+  }
+
+  const pm = S.off.pendingMark;
+  return h('main', { class: 'page stack wide' }, head, pinWarn,
+    h('section', { class: 'hero dark' },
+      h('img', { class: 'mark', src: '/assets/symbol-lg.png', alt: '' }),
+      h('p', { class: 'hero-k' }, 'New invoices to process'),
+      h('div', { class: 'big' }, String(newAll.length)),
+      h('p', { class: 'hero-s' }, newAll.length ? 'From ' + plural(new Set(newAll.map((r) => r.site)).size, 'site') + ' · last ' + o.months.length + ' months' : 'All caught up'),
+      h('div', { class: 'hero-row' },
+        h('button', { class: 'btn btn-white btn-sm', disabled: !newAll.length, onclick: () => downloadZip(newAll, 'New invoices ' + S.cfg.today + '.zip', true) }, icon('download', 16), 'Download all new (ZIP)'))),
+    pm ? markPrompt(pm) : null,
+    h('section', { class: 'card' },
+      h('div', { class: 'card-h' }, h('h2', null, 'Sites'), h('span', { class: 'sm muted' }, fmtMonthLong(o.month))),
+      h('div', { class: 'list' }, sites.map((s) => h('a', { class: 'row', href: '#/office/site/' + encodeURIComponent(s.id) },
+        h('span', { class: 'row-ic' }, icon('store', 19)),
+        h('span', { class: 'row-main' },
+          h('span', { class: 'row-t', style: 'display:block' }, s.name),
+          h('span', { class: 'row-s', style: 'display:block' }, plural(s.monthTotal, 'invoice') + ' this month' + (s.dockets.length ? ' · dockets linked' : ''))),
+        s.newCount ? h('span', { class: 'pill pill-count' }, String(s.newCount)) : null,
+        icon('chevR', 18))))),
+    h('div', { class: 'btn-row' },
+      h('a', { class: 'btn', href: '#/office/sites' }, icon('sliders', 16), 'Manage sites'),
+      h('a', { class: 'btn', href: S.cfg.docketsUrl, target: '_blank', rel: 'noopener' }, icon('fuel', 16), 'Fuel Dockets', icon('ext', 14)),
+      S.cfg.officePin ? h('button', { class: 'btn', onclick: lockOffice }, icon('logout', 16), 'Lock') : null),
+    h('p', { class: 'footer' }, h('b', null, 'SUNSTATE PETROLEUM'), ' · Site Invoices'));
+}
+function markPrompt(pm) {
+  return h('div', { class: 'note ok', style: 'align-items:center;flex-wrap:wrap' },
+    icon('check', 16),
+    h('span', { style: 'flex:1;min-width:180px' }, 'Downloaded ' + plural(pm.length, 'invoice') + '. Mark them as processed?'),
+    h('span', { style: 'display:flex;gap:8px' },
+      h('button', { class: 'btn btn-sm', onclick: () => { S.off.pendingMark = null; render(); } }, 'Not now'),
+      h('button', { class: 'btn btn-sm btn-dark', onclick: () => markMany(pm, 'processed') }, 'Mark processed')));
+}
+async function lockOffice() {
+  try { await api('/api/logout', { json: {} }); } catch (e) {}
+  S.cfg.officeOk = false; S.off.ov = null; S.off.inv = {}; render();
+}
+async function markMany(items, status) {
+  S.busy = { title: 'Updating ' + plural(items.length, 'invoice') + '…' }; render();
+  try {
+    for (let i = 0; i < items.length; i += 300) await api('/api/office/status', { json: { status, items: items.slice(i, i + 300).map((r) => ({ site: r.site, month: r.month, id: r.id })) } });
+    S.off.pendingMark = null;
+    toast(plural(items.length, 'invoice') + ' marked ' + (status === 'processed' ? 'processed' : 'new') + '.');
+  } catch (e) { toast(e.message, true); }
+  S.busy = null;
+  S.off.ov = null; S.off.inv = {};
+  onRoute();
+}
+
+/* =========================================================== office: site */
+function officeSiteView(siteId) {
+  const site = S.cfg.sites.find((s) => s.id === siteId);
+  if (!site) return h('main', { class: 'page' }, h('a', { class: 'back', href: '#/office' }, icon('chevL', 18), 'All sites'), h('div', { class: 'card' }, h('div', { class: 'empty' }, 'That site was not found.')));
+  const tab = S.off.tab;
+  return h('main', { class: 'page stack wide' },
+    h('div', null,
+      h('a', { class: 'back', href: '#/office' }, icon('chevL', 18), 'All sites'),
+      h('h1', { class: 'h1' }, site.name),
+      site.archived ? h('span', { class: 'pill pill-grey', style: 'margin-top:6px' }, 'Archived') : null),
+    h('div', { class: 'tabs', role: 'tablist' },
+      h('button', { class: tab === 'invoices' ? 'on' : '', role: 'tab', onclick: () => { S.off.tab = 'invoices'; render(); } }, icon('file', 16), 'Invoices'),
+      h('button', { class: tab === 'dockets' ? 'on' : '', role: 'tab', onclick: () => { S.off.tab = 'dockets'; if (!S.off.dk) loadDocketLocations(); render(); } }, icon('fuel', 16), 'Fuel dockets')),
+    tab === 'dockets' ? siteDockets(site) : siteInvoices(site));
+}
+
+function siteInvoices(site) {
+  const months = S.off.months[site.id];
+  if (!months) return h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading…'));
+  const month = S.off.month[site.id] || months[0];
+  const list = S.off.inv[site.id + '|' + month];
+  const monthChips = h('div', { class: 'scroller' }, months.map((m) => h('button', { class: 'sel' + (m === month ? ' on' : ''), onclick: () => { S.off.month[site.id] = m; render(); if (!S.off.inv[site.id + '|' + m]) loadInvoices(site.id, m); } }, fmtMonth(m))));
+  if (!list) return h('div', { class: 'stack' }, monthChips, h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading invoices…')));
+  if (list.error) return h('div', { class: 'stack' }, monthChips, h('div', { class: 'err' }, icon('alert', 18), list.error));
+  const f = S.off.filter;
+  const counts = { new: list.filter((r) => r.status === 'new').length, processed: list.filter((r) => r.status === 'processed').length, all: list.length };
+  const shown = f === 'all' ? list : list.filter((r) => r.status === f);
+  const withSite = shown.map((r) => Object.assign({ siteName: site.name }, r));
+  const label = { new: 'New', all: 'All', processed: 'Processed' };
+  return h('div', { class: 'stack' },
+    monthChips,
+    h('div', { class: 'tabs' }, ['new', 'all', 'processed'].map((k) => h('button', { class: f === k ? 'on' : '', onclick: () => { S.off.filter = k; render(); } }, label[k] + ' (' + counts[k] + ')'))),
+    S.off.pendingMark ? markPrompt(S.off.pendingMark) : null,
+    shown.length ? h('div', { class: 'btn-row' },
+      h('button', { class: 'btn btn-dark btn-sm', onclick: () => downloadZip(withSite, site.name + ' ' + fmtMonth(month) + ' ' + label[f] + '.zip', f !== 'processed') }, icon('download', 16), 'Download ' + shown.length + ' as ZIP'),
+      f === 'new' ? h('button', { class: 'btn btn-sm', onclick: () => markMany(shown, 'processed') }, icon('check', 16), 'Mark all processed') : null) : null,
+    h('section', { class: 'card' }, shown.length ? h('div', { class: 'list' }, shown.map((r) => invoiceRow(r, site))) :
+      h('div', { class: 'empty' }, icon('file', 28), f === 'new' ? 'No new invoices for ' + fmtMonthLong(month) + '.' : 'No invoices for ' + fmtMonthLong(month) + '.')));
+}
+function invoiceRow(r, site) {
+  const sub = [r.invoiceNo ? '#' + r.invoiceNo : null, r.total ? fmtMoney(r.total) : null, plural(r.pages, 'page'), fmtWhen(r.uploadedAt)].filter(Boolean).join(' · ');
+  return h('button', { class: 'row', onclick: () => openInvoice(r, site) },
+    h('span', { class: 'row-ic' }, icon('file', 19)),
+    h('span', { class: 'row-main' },
+      h('span', { class: 'row-t', style: 'display:block' }, r.supplier),
+      h('span', { class: 'row-s', style: 'display:block' }, sub),
+      r.note ? h('span', { class: 'row-s', style: 'display:block;color:var(--amber)' }, '“' + r.note + '”') : null),
+    r.status === 'processed' ? h('span', { class: 'pill pill-done' }, 'Processed') : h('span', { class: 'pill pill-new' }, 'New'),
+    icon('chevR', 18));
+}
+
+/* ---------- invoice sheet */
+function openInvoice(r, site) { S.sheet = { kind: 'invoice', rec: r, siteName: site.name, edit: false }; render(); }
+function invoiceSheet(s) {
+  const r = s.rec;
+  const pages = [];
+  for (let i = 1; i <= r.pages; i++) pages.push(h('a', { href: pageUrl(r, i), target: '_blank', rel: 'noopener', title: 'Open page ' + i + ' full size' }, h('img', { src: pageUrl(r, i), alt: 'Page ' + i, loading: 'lazy' })));
+  let details;
+  if (s.edit) {
+    const inp = (k, label, attrs) => h('label', { class: 'field' }, h('span', { class: 'label' }, label), h(attrs && attrs.tag || 'input', Object.assign({ class: 'input', id: 'e-' + k, value: r[k] || '' }, attrs || {}, { tag: null })));
+    details = h('div', null,
+      inp('supplier', 'Supplier'), inp('invoiceNo', 'Invoice no.'), inp('invoiceDate', 'Invoice date', { type: 'date' }), inp('total', 'Total inc GST', { inputmode: 'decimal' }), inp('note', 'Note', { tag: 'textarea', rows: 2 }),
+      h('div', { class: 'btn-row', style: 'margin-top:14px' },
+        h('button', { class: 'btn', onclick: () => { s.edit = false; render(); } }, 'Cancel'),
+        h('button', { class: 'btn btn-primary', onclick: () => saveInvoiceEdits(s) }, 'Save')));
+  } else {
+    details = h('dl', { class: 'dl' },
+      h('dt', null, 'Site'), h('dd', null, s.siteName),
+      h('dt', null, 'Invoice no.'), h('dd', null, r.invoiceNo || '—'),
+      h('dt', null, 'Invoice date'), h('dd', null, r.invoiceDate ? fmtDay(r.invoiceDate) : '—'),
+      h('dt', null, 'Total'), h('dd', null, r.total ? fmtMoney(r.total) : '—'),
+      r.note ? [h('dt', null, 'Note'), h('dd', null, r.note)] : null,
+      h('dt', null, 'Sent by'), h('dd', null, (r.by || '—') + ', ' + fmtWhen(r.uploadedAt)),
+      r.status === 'processed' && r.processedAt ? [h('dt', null, 'Processed'), h('dd', null, fmtWhen(r.processedAt))] : null);
+  }
+  return h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', onclick: (e) => e.stopPropagation() },
+    h('div', { class: 'sheet-h' },
+      h('div', { class: 't' }, h('div', { class: 'row-t', style: 'font-size:17px' }, r.supplier), h('div', { style: 'margin-top:3px' }, r.status === 'processed' ? h('span', { class: 'pill pill-done' }, 'Processed') : h('span', { class: 'pill pill-new' }, 'New'))),
+      s.edit ? null : h('button', { class: 'iconbtn', onclick: () => { s.edit = true; render(); }, 'aria-label': 'Edit details' }, icon('edit', 16)),
+      h('button', { class: 'iconbtn', onclick: closeSheet, 'aria-label': 'Close' }, icon('x', 18))),
+    h('div', { class: 'sheet-b stack' },
+      h('section', { class: 'card card-pad' }, details),
+      h('div', { class: 'btn-row' },
+        h('button', { class: 'btn btn-primary', onclick: () => downloadInvoicePdf(r, s.siteName) }, icon('download', 16), 'Download PDF'),
+        r.status === 'processed'
+          ? h('button', { class: 'btn', onclick: () => setStatus(s, 'new') }, 'Mark as new')
+          : h('button', { class: 'btn btn-dark', onclick: () => setStatus(s, 'processed') }, icon('check', 16), 'Mark processed')),
+      h('div', { class: 'pages' }, pages),
+      h('button', { class: 'btn btn-danger btn-block', onclick: () => confirmDelete(s) }, icon('trash', 16), 'Delete invoice')));
+}
+async function setStatus(s, status) {
+  try {
+    const d = await api('/api/office/update', { json: { site: s.rec.site, month: s.rec.month, id: s.rec.id, status } });
+    s.rec = d.record; updateLocalRecord(d.record);
+    toast(status === 'processed' ? 'Marked as processed.' : 'Marked as new.');
+  } catch (e) { toast(e.message, true); }
+}
+async function saveInvoiceEdits(s) {
+  const val = (k) => (document.getElementById('e-' + k) || {}).value;
+  try {
+    const d = await api('/api/office/update', { json: { site: s.rec.site, month: s.rec.month, id: s.rec.id, supplier: val('supplier'), invoiceNo: val('invoiceNo'), invoiceDate: val('invoiceDate'), total: val('total'), note: val('note') } });
+    s.rec = d.record; s.edit = false; updateLocalRecord(d.record); toast('Saved.');
+  } catch (e) { toast(e.message, true); }
+}
+function confirmDelete(s) {
+  const r = s.rec, site = s.siteName;
+  openDialog('Delete this invoice?', r.supplier + (r.invoiceNo ? ' #' + r.invoiceNo : '') + ' from ' + site + ' and its ' + plural(r.pages, 'photo') + ' will be deleted for good.', [
+    { label: 'Cancel', run: () => { S.sheet = s; render(); } },
+    { label: 'Delete', danger: true, run: async () => {
+      try {
+        await api('/api/office/delete', { json: { site: r.site, month: r.month, id: r.id } });
+        const key = r.site + '|' + r.month; if (Array.isArray(S.off.inv[key])) S.off.inv[key] = S.off.inv[key].filter((x) => x.id !== r.id);
+        S.off.ovStale = true; toast('Invoice deleted.');
+      } catch (e) { toast(e.message, true); }
+    } }]);
+}
+
+/* ---------- downloads: PDF per invoice, ZIP of PDFs */
+function invoicePdfName(r) {
+  return safeName([r.invoiceDate || (r.uploadedAt || '').slice(0, 10), r.supplier, r.invoiceNo ? '#' + r.invoiceNo : null].filter(Boolean).join(' ')) + '.pdf';
+}
+async function invoicePdfBytes(r) {
+  const imgs = [];
+  for (let i = 1; i <= r.pages; i++) imgs.push(await ensureJpeg(await fetchBytes(pageUrl(r, i))));
+  return buildPdf(imgs, { title: r.supplier + (r.invoiceNo ? ' #' + r.invoiceNo : '') });
+}
+async function downloadInvoicePdf(r, siteNm) {
+  S.busy = { title: 'Making PDF…' }; render();
+  try { saveBlob(new Blob([await invoicePdfBytes(r)], { type: 'application/pdf' }), safeName(siteNm) + ' ' + invoicePdfName(r)); }
+  catch (e) { toast(e.message, true); }
+  S.busy = null; render();
+}
+async function downloadZip(items, zipName, offerMark) {
+  if (!items.length) return;
+  S.busy = { title: 'Preparing invoices', done: 0, total: items.length }; render();
+  try {
+    const files = []; const used = {};
+    for (const r of items) {
+      let name = safeName(r.siteName || siteName(r.site)) + '/' + invoicePdfName(r);
+      if (used[name]) { used[name]++; name = name.replace(/\.pdf$/, ' (' + used[name] + ').pdf'); } else used[name] = 1;
+      files.push({ name, data: await invoicePdfBytes(r) });
+      S.busy.done++; render();
+    }
+    saveBlob(makeZip(files), safeName(zipName.replace(/\.zip$/, '')) + '.zip');
+    if (offerMark) { const pending = items.filter((r) => r.status === 'new'); S.off.pendingMark = pending.length ? pending : null; }
+  } catch (e) { toast(e.message, true); }
+  S.busy = null; render();
+}
+function saveBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.rel = 'noopener';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 8000);
+}
+
+function jpegSize(b) {
+  if (b[0] !== 0xff || b[1] !== 0xd8) return null;
+  let i = 2;
+  while (i + 9 < b.length) {
+    if (b[i] !== 0xff) { i++; continue; }
+    const m = b[i + 1];
+    if (m === 0xd8 || m === 0x01 || (m >= 0xd0 && m <= 0xd7)) { i += 2; continue; }
+    const len = (b[i + 2] << 8) | b[i + 3];
+    if ((m >= 0xc0 && m <= 0xc3) || (m >= 0xc5 && m <= 0xc7) || (m >= 0xc9 && m <= 0xcb) || (m >= 0xcd && m <= 0xcf)) {
+      return { h: (b[i + 5] << 8) | b[i + 6], w: (b[i + 7] << 8) | b[i + 8], c: b[i + 9] };
+    }
+    i += 2 + len;
+  }
+  return null;
+}
+async function ensureJpeg(bytes) {
+  const size = jpegSize(bytes);
+  if (size && size.w && size.h) return { bytes, w: size.w, h: size.h, c: size.c };
+  const out = await compressImage(new Blob([bytes]), 4000, 0.9);
+  const b = new Uint8Array(await out.blob.arrayBuffer());
+  const s2 = jpegSize(b);
+  return { bytes: b, w: s2.w, h: s2.h, c: s2.c };
+}
+function buildPdf(images, meta) {
+  const enc = new TextEncoder();
+  const chunks = []; let len = 0; const offsets = [];
+  const push = (x) => { const b = typeof x === 'string' ? enc.encode(x) : x; chunks.push(b); len += b.length; };
+  const n = images.length;
+  const pageIds = images.map((_, i) => 3 + i * 3);
+  push('%PDF-1.4\n'); push(new Uint8Array([37, 226, 227, 207, 211, 10]));
+  const obj = (id, dict, stream) => {
+    offsets[id] = len;
+    push(id + ' 0 obj\n' + dict + '\n');
+    if (stream) { push('stream\n'); push(stream); push('\nendstream\n'); }
+    push('endobj\n');
+  };
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, '<< /Type /Pages /Kids [' + pageIds.map((id) => id + ' 0 R').join(' ') + '] /Count ' + n + ' >>');
+  images.forEach((img, i) => {
+    const W = 595.28; const H = Math.round(W * img.h / img.w * 100) / 100;
+    const pid = pageIds[i];
+    const content = enc.encode('q ' + W + ' 0 0 ' + H + ' 0 0 cm /Im' + i + ' Do Q');
+    obj(pid, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /XObject << /Im' + i + ' ' + (pid + 2) + ' 0 R >> >> /Contents ' + (pid + 1) + ' 0 R >>');
+    obj(pid + 1, '<< /Length ' + content.length + ' >>', content);
+    const cs = img.c === 1 ? '/DeviceGray' : img.c === 4 ? '/DeviceCMYK' : '/DeviceRGB';
+    obj(pid + 2, '<< /Type /XObject /Subtype /Image /Width ' + img.w + ' /Height ' + img.h + ' /ColorSpace ' + cs + ' /BitsPerComponent 8 /Filter /DCTDecode' + (img.c === 4 ? ' /Decode [1 0 1 0 1 0 1 0]' : '') + ' /Length ' + img.bytes.length + ' >>', img.bytes);
+  });
+  const infoId = 3 + n * 3;
+  const pdfStr = (s) => '(' + String(s || '').replace(/[^\x20-\x7e]/g, '').replace(/([\\()])/g, '\\$1') + ')';
+  obj(infoId, '<< /Title ' + pdfStr(meta && meta.title) + ' /Producer (Sunstate Site Invoices) >>');
+  const xref = len;
+  let x = 'xref\n0 ' + (infoId + 1) + '\n0000000000 65535 f \n';
+  for (let i = 1; i <= infoId; i++) x += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+  push(x);
+  push('trailer\n<< /Size ' + (infoId + 1) + ' /Root 1 0 R /Info ' + infoId + ' 0 R >>\nstartxref\n' + xref + '\n%%EOF\n');
+  const out = new Uint8Array(len); let o = 0;
+  for (const c of chunks) { out.set(c, o); o += c.length; }
+  return out;
+}
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = CRC_TABLE[(c ^ b[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+function makeZip(files) {
+  const enc = new TextEncoder();
+  const parts = []; const central = []; let offset = 0;
+  const now = new Date(); const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1); const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  for (const f of files) {
+    const name = enc.encode(f.name); const data = f.data; const crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+    ch.setUint16(30, 0, true); ch.setUint16(32, 0, true); ch.setUint16(34, 0, true); ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    offset += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((a, c) => a + c.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob(parts.concat(central, [new Uint8Array(end.buffer)]), { type: 'application/zip' });
+}
+
+/* =========================================================== office: dockets tab */
+function siteDockets(site) {
+  if (!S.cfg.docketsLinked) return h('div', { class: 'card card-pad' }, h('div', { class: 'note' }, icon('link', 16), h('span', null, 'Fuel Dockets is not connected to this app yet. Add the DOCKETS service binding (see the README).')));
+  const full = ovSite(site.id);
+  if (!full) return h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading…'));
+  const linked = full.dockets || [];
+  if (!linked.length) {
+    return h('div', { class: 'card card-pad', style: 'text-align:center' },
+      h('p', { class: 'b' }, 'No Fuel Dockets locations linked'),
+      h('p', { class: 'lead', style: 'margin:4px 0 14px' }, 'Link the location name drivers use in Fuel Dockets so this site’s dockets show here.'),
+      h('a', { class: 'btn btn-dark', href: '#/office/sites' }, icon('link', 16), 'Link docket locations'));
+  }
+  if (S.off.dk === 'loading' || (!S.off.dk && !S.off.dkErr)) return h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading dockets from Fuel Dockets…'));
+  if (S.off.dkErr) return h('div', { class: 'err' }, icon('alert', 18), S.off.dkErr);
+  const locs = S.off.dk.filter((l) => linked.includes(l.name));
+  const entries = [];
+  locs.forEach((l) => l.suppliers.forEach((sp) => sp.dates.forEach((dt) => entries.push({ loc: l.name, sup: sp.name, date: dt, sortKey: dt.split('-').reverse().join('') }))));
+  entries.sort((a, b) => b.sortKey.localeCompare(a.sortKey) || a.sup.localeCompare(b.sup));
+  return h('div', { class: 'stack' },
+    h('div', { class: 'note ok' }, icon('link', 16), h('span', null, 'From Fuel Dockets: ', linked.map(docketName).join(', '))),
+    h('section', { class: 'card' }, entries.length ? h('div', { class: 'list' }, entries.map((e) => docketEntry(e, site))) : h('div', { class: 'empty' }, icon('fuel', 28), 'No dockets uploaded for this site yet.')),
+    h('a', { class: 'btn btn-block', href: S.cfg.docketsUrl, target: '_blank', rel: 'noopener' }, icon('fuel', 16), 'Open Fuel Dockets', icon('ext', 14)));
+}
+function ovSite(id) { return S.off.ov && S.off.ov.sites.find((s) => s.id === id); }
+function docketEntry(e, site) {
+  const key = e.loc + '|' + e.sup + '|' + e.date;
+  const open = S.off.dkOpen === key;
+  const photos = S.off.dkPhotos[key];
+  const [dd, mm, yy] = e.date.split('-');
+  const ymd = yy + '-' + mm + '-' + dd;
+  const row = h('button', { class: 'row', onclick: () => toggleDocket(e, key) },
+    h('span', { class: 'row-ic' }, icon('calendar', 18)),
+    h('span', { class: 'row-main' }, h('span', { class: 'row-t', style: 'display:block' }, fmtDay(ymd)), h('span', { class: 'row-s', style: 'display:block' }, (DOCKET_SUP[e.sup] || e.sup) + ' · ' + docketName(e.loc))),
+    icon(open ? 'chevL' : 'chevR', 18));
+  if (!open) return row;
+  let body;
+  if (!photos) body = h('p', { class: 'sm muted pulse' }, 'Loading photos…');
+  else if (photos.error) body = h('p', { class: 'sm', style: 'color:var(--red)' }, photos.error);
+  else if (!photos.length) body = h('p', { class: 'sm muted' }, 'No photos.');
+  else body = h('div', null,
+    h('div', { class: 'photos' }, photos.map((p) => h('a', { href: docketPhotoUrl(p.key), target: '_blank', rel: 'noopener' }, h('img', { src: docketPhotoUrl(p.key), alt: p.name, loading: 'lazy' })))),
+    h('button', { class: 'btn btn-dark btn-sm', style: 'margin-top:10px', onclick: () => downloadDocketPdf(e, photos, site) }, icon('download', 16), 'Download PDF'));
+  return h('div', null, row, h('div', { style: 'padding:4px 16px 16px 66px' }, body));
+}
+function docketPhotoUrl(key, dl) { return '/api/office/dockets/photo?key=' + encodeURIComponent(key) + (dl ? '&download=' + encodeURIComponent(dl) : ''); }
+async function toggleDocket(e, key) {
+  if (S.off.dkOpen === key) { S.off.dkOpen = null; render(); return; }
+  S.off.dkOpen = key; render();
+  if (S.off.dkPhotos[key] && !S.off.dkPhotos[key].error) return;
+  try {
+    const d = await api('/api/office/dockets/list?location=' + encodeURIComponent(e.loc) + '&supplier=' + encodeURIComponent(e.sup) + '&date=' + encodeURIComponent(e.date));
+    S.off.dkPhotos[key] = d.files;
+  } catch (ex) { S.off.dkPhotos[key] = { error: ex.message }; }
+  render();
+}
+async function downloadDocketPdf(e, photos, site) {
+  S.busy = { title: 'Making PDF…' }; render();
+  try {
+    const imgs = [];
+    for (const p of photos) imgs.push(await ensureJpeg(await fetchBytes(docketPhotoUrl(p.key))));
+    const [dd, mm, yy] = e.date.split('-');
+    saveBlob(new Blob([buildPdf(imgs, { title: 'Fuel docket ' + e.date })], { type: 'application/pdf' }), safeName(site.name + ' ' + yy + '-' + mm + '-' + dd + ' Fuel docket ' + (DOCKET_SUP[e.sup] || e.sup)) + '.pdf');
+  } catch (ex) { toast(ex.message, true); }
+  S.busy = null; render();
+}
+
+/* =========================================================== office: manage sites */
+function manageSitesView() {
+  const ov = S.off.ov;
+  const sitesFull = ov ? ov.sites : null;
+  const ta = h('textarea', { class: 'input', id: 'new-sites', rows: 3, placeholder: 'One site per line, e.g.\nGympie\nTanawha' });
+  const addBox = h('section', { class: 'card card-pad' },
+    h('h2', { class: 'h2' }, 'Add sites'),
+    h('p', { class: 'lead', style: 'margin-bottom:12px' }, 'Type one site per line. Staff will pick from this list.'),
+    ta,
+    h('button', { class: 'btn btn-primary', style: 'margin-top:12px', onclick: async () => {
+      const names = ta.value.split(/\n|,/).map((s) => s.trim()).filter(Boolean);
+      if (!names.length) return;
+      await siteAction({ action: 'add', names }, plural(names.length, 'site') + ' added.');
+    } }, icon('plus', 18), 'Add'));
+
+  let docketBox = null;
+  if (S.cfg.docketsLinked) {
+    let content;
+    if (S.off.dk === 'loading' || !sitesFull) content = h('p', { class: 'sm muted pulse' }, 'Loading Fuel Dockets locations…');
+    else if (S.off.dkErr) content = h('div', { class: 'err' }, icon('alert', 18), S.off.dkErr);
+    else if (!S.off.dk || !S.off.dk.length) content = h('p', { class: 'sm muted' }, 'No locations in Fuel Dockets yet.');
+    else {
+      const linkedTo = {};
+      sitesFull.forEach((s) => (s.dockets || []).forEach((d) => { linkedTo[d] = s; }));
+      content = h('div', { class: 'list', style: 'margin:0 -16px -16px' }, S.off.dk.map((l) => docketLinkRow(l.name, linkedTo[l.name], sitesFull)));
+    }
+    docketBox = h('section', { class: 'card card-pad' },
+      h('h2', { class: 'h2' }, 'Fuel Dockets locations'),
+      h('p', { class: 'lead', style: 'margin-bottom:12px' }, 'Drivers type the location in Fuel Dockets. Link each one to a site so its dockets show next to that site’s invoices.'),
+      content);
+  }
+
+  let list;
+  if (!sitesFull) list = h('div', { class: 'empty pulse' }, 'Loading…');
+  else if (!sitesFull.length) list = h('div', { class: 'empty' }, 'No sites yet.');
+  else list = h('div', { class: 'list' }, sitesFull.map((s) => h('div', { class: 'row' },
+    h('span', { class: 'row-ic' }, icon(s.archived ? 'archive' : 'store', 19)),
+    h('span', { class: 'row-main' },
+      h('span', { class: 'row-t', style: 'display:block' + (s.archived ? ';color:var(--muted)' : '') }, s.name),
+      h('span', { class: 'row-s', style: 'display:block' }, s.archived ? 'Archived · hidden from staff' : (s.dockets.length ? 'Dockets: ' + s.dockets.map(docketName).join(', ') : 'No dockets linked'))),
+    h('button', { class: 'iconbtn', title: 'Rename', 'aria-label': 'Rename ' + s.name, onclick: () => renameSite(s) }, icon('edit', 16)),
+    h('button', { class: 'iconbtn', title: s.archived ? 'Restore' : 'Archive', 'aria-label': (s.archived ? 'Restore ' : 'Archive ') + s.name, onclick: () => siteAction({ action: 'update', id: s.id, archived: !s.archived }, s.archived ? 'Site restored.' : 'Site archived.') }, icon(s.archived ? 'refresh' : 'archive', 16)))));
+
+  return h('main', { class: 'page stack wide' },
+    h('div', null, h('a', { class: 'back', href: '#/office' }, icon('chevL', 18), 'Office'), h('h1', { class: 'h1' }, 'Manage sites')),
+    addBox, docketBox,
+    h('section', { class: 'card' }, h('div', { class: 'card-h' }, h('h2', null, 'Sites'), sitesFull ? h('span', { class: 'sm muted' }, String(sitesFull.length)) : null), list));
+}
+function suggestSite(docket, sites) {
+  const strip = (s) => s.toLowerCase().replace(/#\s*\d+/g, '').replace(/\b(shell|liberty|caltex|bp|ampol|puma|united|metro|mobil|7-eleven|sunstate|ssp|servo|service station|fuel)\b/g, '').replace(/[^a-z0-9]/g, '');
+  const k = strip(docketName(docket));
+  if (!k) return null;
+  let best = null, bestScore = 9;
+  for (const s of sites) {
+    if (s.archived) continue;
+    const n = strip(s.name);
+    if (!n) continue;
+    const score = n === k ? 0 : (n.length >= 4 && (k.includes(n) || n.includes(k))) ? 1 : lev(n, k);
+    if (score < bestScore) { best = s; bestScore = score; }
+  }
+  return bestScore <= 2 ? best : null;
+}
+function docketLinkRow(name, site, sites) {
+  if (site) {
+    return h('div', { class: 'row' },
+      h('span', { class: 'row-ic' }, icon('fuel', 18)),
+      h('span', { class: 'row-main' }, h('span', { class: 'row-t', style: 'display:block' }, docketName(name)), h('span', { class: 'row-s', style: 'display:block' }, 'Linked to ' + site.name)),
+      h('button', { class: 'btn btn-sm', onclick: () => siteAction({ action: 'update', id: site.id, dockets: site.dockets.filter((d) => d !== name) }, 'Unlinked.') }, 'Unlink'));
+  }
+  const guess = suggestSite(name, sites);
+  const select = h('select', { 'aria-label': 'Link ' + docketName(name) + ' to a site', onchange: async (e) => {
+    const v = e.target.value;
+    if (!v) return;
+    if (v === '__new') await siteAction({ action: 'add', names: [docketName(name)], docket: name }, 'Site added and linked.');
+    else { const s = sites.find((x) => x.id === v); await siteAction({ action: 'update', id: v, dockets: (s.dockets || []).concat([name]) }, 'Linked to ' + s.name + '.'); }
+  } },
+  h('option', { value: '' }, 'Link to a site…'),
+  sites.filter((s) => !s.archived).map((s) => h('option', { value: s.id }, s.name)),
+  h('option', { value: '__new' }, '+ New site called “' + docketName(name) + '”'));
+  return h('div', { class: 'row', style: 'flex-wrap:wrap' },
+    h('span', { class: 'row-ic' }, icon('fuel', 18)),
+    h('span', { class: 'row-main' }, h('span', { class: 'row-t', style: 'display:block' }, docketName(name)), h('span', { class: 'row-s', style: 'display:block;color:var(--amber)' }, 'Not linked')),
+    guess ? h('button', { class: 'btn btn-sm btn-dark', onclick: () => siteAction({ action: 'update', id: guess.id, dockets: (guess.dockets || []).concat([name]) }, 'Linked to ' + guess.name + '.') }, icon('link', 14), guess.name) : null,
+    h('div', { class: 'selectwrap', style: 'flex-basis:100%;padding-left:50px' }, select));
+}
+function renameSite(s) {
+  const input = h('input', { class: 'input', id: 'rename-site', value: s.name });
+  S.sheet = { kind: 'dialog', title: 'Rename site', text: '', body: h('div', { style: 'margin-top:12px' }, input), actions: [
+    { label: 'Cancel' },
+    { label: 'Save', primary: true, run: () => siteAction({ action: 'update', id: s.id, name: input.value }, 'Renamed.') }] };
+  render();
+  setTimeout(() => { const el = document.getElementById('rename-site'); if (el) el.select(); }, 30);
+}
+async function siteAction(body, okMsg) {
+  try {
+    const d = await api('/api/office/sites', { json: body });
+    S.cfg.sites = d.sites.map((s) => ({ id: s.id, name: s.name, archived: !!s.archived }));
+    S.off.inv = {};
+    toast(okMsg);
+    loadOverview();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* =========================================================== boot */
+async function boot() {
+  S.cfgErr = ''; render();
+  try { S.cfg = await api('/api/config'); }
+  catch (e) { S.cfgErr = e.message; render(); return; }
+  if (S.siteId && !currentSite()) { S.siteId = ''; }
+  onRoute();
+}
+S.route = parseHash();
+boot();
+</script>
+</body>
+</html>

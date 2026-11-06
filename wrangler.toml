@@ -1,0 +1,39 @@
+name = "siteinvoices"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+# Keep variables added in the Cloudflare dashboard when this repo redeploys.
+keep_vars = true
+
+[observability]
+enabled = true
+
+# Invoice photos and details. Create an R2 bucket called sunstate-invoices in the Cloudflare
+# dashboard (R2 Object Storage > Create bucket) before the first deploy.
+[[r2_buckets]]
+binding = "INVOICES"
+bucket_name = "sunstate-invoices"
+
+# Connects to the existing Fuel Dockets Worker: shows each site's dockets in the office view and
+# lets invoice photos be read through Fuel Dockets' Claude proxy. "fueldockets" must match the
+# name of that Worker in Cloudflare (it is the first part of its workers.dev address).
+[[services]]
+binding = "DOCKETS"
+service = "fueldockets"
+
+[vars]
+# Where the "Fuel delivery docket" buttons send people.
+DOCKETS_URL = "https://fueldockets.jaidenbanks88.workers.dev"
+# Set to "off" to stop reading invoice photos automatically.
+AUTOFILL = "on"
+
+# Lets src/index.js import the app page as text and the logo images as bytes.
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true
+
+[[rules]]
+type = "Data"
+globs = ["**/*.png"]
+fallthrough = true

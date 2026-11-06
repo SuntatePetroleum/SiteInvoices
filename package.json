@@ -1,0 +1,14 @@
+{
+  "name": "siteinvoices",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sunstate Petroleum site invoices: staff photograph supplier invoices, the office downloads them per site",
+  "scripts": {
+    "dev": "node dev/server.mjs 8787",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
