@@ -309,10 +309,10 @@ async function rememberSupplier(env, name) {
 
 /* ------------------------------------------------------------ fuel dockets */
 
-function docketsBound(env) { return !!(env.DOCKETS && typeof env.DOCKETS.fetch === 'function'); }
+function docketsBound(env) { return !!(env.DOCKETS && typeof env.DOCKETS.fetch === 'function') || !!env.DOCKETS_URL; }
 
 async function docketsFetch(env, path, init) {
-  if (docketsBound(env)) return env.DOCKETS.fetch(new Request('https://fueldockets' + path, init));
+     if (env.DOCKETS && typeof env.DOCKETS.fetch === 'function') return env.DOCKETS.fetch(new Request('https://fueldockets' + path, init));
   const base = String(env.DOCKETS_URL || DEFAULT_DOCKETS_URL).replace(/\/+$/, '');
   return fetch(base + path, init);
 }
