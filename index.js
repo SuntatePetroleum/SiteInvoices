@@ -13,12 +13,12 @@
 // site's dockets in the office view and to read invoice photos with Fuel Dockets' /analyse proxy.
 
 import UI_HTML from './ui.html';
-import SYMBOL_PNG from './assets/symbol-256.png';
-import SYMBOL_LG_PNG from './assets/symbol-512.png';
-import TOUCH_ICON_PNG from './assets/apple-touch-icon.png';
-import ICON_192_PNG from './assets/icon-192.png';
-import ICON_512_PNG from './assets/icon-512.png';
-import FAVICON_PNG from './assets/favicon-64.png';
+import SYMBOL_PNG from './symbol-256.png';
+import SYMBOL_LG_PNG from './symbol-512.png';
+import TOUCH_ICON_PNG from './apple-touch-icon.png';
+import ICON_192_PNG from './icon-192.png';
+import ICON_512_PNG from './icon-512.png';
+import FAVICON_PNG from './favicon-64.png';
 
 const DEFAULT_DOCKETS_URL = 'https://fueldockets.jaidenbanks88.workers.dev';
 const SITES_KEY = 'config/sites.json';
