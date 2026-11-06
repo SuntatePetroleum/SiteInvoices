@@ -17,9 +17,6 @@ bucket_name = "sunstate-invoices"
 # Connects to the existing Fuel Dockets Worker: shows each site's dockets in the office view and
 # lets invoice photos be read through Fuel Dockets' Claude proxy. "fueldockets" must match the
 # name of that Worker in Cloudflare (it is the first part of its workers.dev address).
-[[services]]
-binding = "DOCKETS"
-service = "fueldockets"
 
 [vars]
 # Where the "Fuel delivery docket" buttons send people.
