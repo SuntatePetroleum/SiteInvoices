@@ -397,7 +397,7 @@ function render() {
 }
 function showNav() {
   if (!S.cfg) return false;
-  if (S.route[0] === 'upload') return false;
+     if (S.route[0] === 'upload' && staffAllowed() && currentSite()) return false;
   if (S.route[0] === 'office' && !officeAllowed()) return true;
   return true;
 }
@@ -505,7 +505,7 @@ function pickSiteView() {
     currentSite() ? h('a', { class: 'back', href: '#/' }, icon('chevL', 18), 'Back') : null,
     h('div', null, h('h1', { class: 'h1' }, 'Which site are you at?'), h('p', { class: 'lead' }, 'Invoices you upload are filed under this site. This phone will remember it.')),
     sites.length ? h('div', { class: 'card' }, sites.length > 6 ? h('div', { style: 'padding:12px 12px 4px' }, search) : null, list)
-      : h('div', { class: 'card' }, h('div', { class: 'empty' }, icon('store', 30), h('p', { class: 'b', style: 'color:var(--ink)' }, 'No sites set up yet'), h('p', null, 'The office adds sites under Office → Manage sites.'))));
+              : h('div', { class: 'card' }, h('div', { class: 'empty' }, icon('store', 30), h('p', { class: 'b', style: 'color:var(--ink)' }, 'No sites set up yet'), h('p', null, 'The office adds sites under Office → Manage sites.'), h('a', { class: 'btn btn-dark', href: '#/office', style: 'margin-top:14px' }, icon('briefcase', 16), 'Go to Office'))));
 }
 function chooseSite(id) { S.siteId = id; LS.set('site', id); S.recent = null; go('#/'); }
 
