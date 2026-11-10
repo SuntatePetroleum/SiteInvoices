@@ -1,15 +1,15 @@
 // Local test server: runs the Worker in Node with an in-memory stand-in for the R2 bucket and a
 // pretend Fuel Dockets app (sample locations, photos and an invoice "reader").
 //
-//   node dev/server.mjs [port]
+//   node server.mjs [port]
 //
-// Optional: OFFICE_PIN=1234 STAFF_PIN=5678 node dev/server.mjs   (to try the passcode screens)
+// Optional: OFFICE_PIN=1234 STAFF_PIN=5678 node server.mjs   (to try the passcode screens)
 import http from 'node:http';
 import { register } from 'node:module';
 import { readFile } from 'node:fs/promises';
 
 register('./loader.mjs', import.meta.url);
-const { default: worker } = await import('../src/index.js');
+const { default: worker } = await import('./index.js');
 
 /* ---------------------------------------------------------- R2 stand-in */
 function toBytes(v) {
@@ -90,7 +90,10 @@ export const fakeDockets = {
       this.analyseCalls++;
       const body = await request.json();
       const imgs = body.messages[0].content.filter((c) => c.type === 'image').length;
-      const text = JSON.stringify({ supplier: 'Coca-Cola Europacific Partners Pty Ltd', invoiceNo: 'INV-208341', invoiceDate: '2026-11-05', total: '1,284.60', _pages: imgs });
+      const prompt = body.messages[0].content.filter((c) => c.type === 'text').map((c) => c.text).join(' ');
+      const text = /fuel delivery docket/.test(prompt)
+        ? JSON.stringify({ supplier: 'Viva', otherSupplier: null, locations: ['Goomboorian', 'Gympie'], docketNo: 'BOL-55120', deliveryDate: '2026-11-04', _pages: imgs })
+        : JSON.stringify({ supplier: 'Coca-Cola Europacific Partners Pty Ltd', invoiceNo: 'INV-208341', invoiceDate: '2026-11-05', total: '1,284.60', _pages: imgs });
       return Response.json({ content: [{ type: 'text', text }] });
     }
     return new Response('Not found', { status: 404 });

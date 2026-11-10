@@ -208,6 +208,19 @@ textarea.input{min-height:76px;resize:vertical}
 .tag{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:5px 6px 5px 11px;font-size:13px;font-weight:600;margin:4px 6px 0 0}
 .tag button{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
 .selectwrap select{width:100%;padding:10px 12px;border-radius:11px;border:1.5px solid var(--line);background:#fff;font-size:15px}
+/* dockets */
+.row-ic.dk{background:var(--ink);color:#fff}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.seg button{padding:12px 6px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-weight:700;font-size:15px;color:var(--ink2)}
+.seg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.seg.filled button.on{box-shadow:0 0 0 3px #F6D79A}
+.tags{display:flex;flex-wrap:wrap;margin-top:-4px}
+.tag{font-size:14px;padding:6px 6px 6px 12px}
+.tag.filled{background:#FFFBF2;border-color:#F6D79A}
+.stats{display:flex;gap:30px;position:relative;margin-top:2px}
+.stat-l{font-size:13px;font-weight:650;opacity:.85;margin-top:2px}
+.tab-n{margin-left:2px;padding:1px 7px;font-size:11px;min-width:0}
+select.input{appearance:auto;-webkit-appearance:auto;padding:12px 12px}
 </style>
 </head>
 <body>
@@ -268,6 +281,7 @@ const ICONS = {
   archive: '<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
   link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  truck: '<rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
   store: '<path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M10 20v-5h4v5"/>',
 };
 function icon(name, size) {
@@ -300,24 +314,37 @@ function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one +
 function greeting() { const hr = (new Date().getUTCHours() + 10) % 24; return hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening'; }
 function safeName(s) { return String(s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 90) || 'file'; }
 function docketName(n) { return String(n || '').replace(/_/g, ' '); }
-const DOCKET_SUP = { IOR: 'IOR', Viva: 'Viva Energy', Unknown: 'Other' };
 
 /* =========================================================== state */
+const KIND = {
+  invoice: { noun: 'invoice', Noun: 'Invoice', title: 'Supplier invoice', icon: 'file', tab: 'Invoices', folder: 'Invoices', refLabel: 'Invoice no.', dateLabel: 'Invoice date' },
+  docket: { noun: 'docket', Noun: 'Docket', title: 'Fuel delivery docket', icon: 'fuel', tab: 'Fuel dockets', folder: 'Fuel dockets', refLabel: 'Docket no.', dateLabel: 'Delivery date' },
+};
+const DOCKET_SUPPLIERS = ['IOR', 'Viva Energy', 'Other'];
+const MAX_DOCKET_SITES = 6;
+
 const S = {
   cfg: null, cfgErr: '',
   route: [],
   siteId: LS.get('site', ''),
+  mode: LS.get('mode', 'site'), // 'site': this phone stays at one site; 'driver': delivers to many
   by: LS.get('by', ''),
   recent: null, recentErr: '',
+  sentLocal: LS.get('sent', []), // driver phones: what this phone has sent
   suppliers: [],
   draft: null,
   up: { status: 'idle' },
-  off: { ov: null, ovErr: '', loading: false, months: {}, month: {}, inv: {}, filter: 'new', tab: 'invoices', dk: null, dkErr: '', dkOpen: null, dkPhotos: {}, pendingMark: null },
+  off: { ov: null, ovErr: '', loading: false, months: {}, month: {}, recs: {}, filter: 'new', tab: 'invoice', pendingMark: null, imp: null },
   sheet: null, toast: null, busy: null,
 };
 
+function kindOf(v) { return v === 'docket' ? 'docket' : 'invoice'; }
 function currentSite() { return S.cfg && S.cfg.sites.find((s) => s.id === S.siteId && !s.archived) || null; }
+function isDriver() { return S.mode === 'driver'; }
+function hasHome() { return isDriver() || !!currentSite(); }
+function activeSites() { return S.cfg ? S.cfg.sites.filter((s) => !s.archived) : []; }
 function siteName(id) { const s = S.cfg && S.cfg.sites.find((x) => x.id === id); return s ? s.name : id; }
+function nounFor(items) { const kinds = new Set(items.map((r) => r.kind || 'invoice')); return kinds.size === 1 ? KIND[[...kinds][0]].noun : 'file'; }
 
 /* =========================================================== api */
 async function api(path, opts) {
@@ -347,7 +374,7 @@ function toast(msg, bad) {
   S.toast = { msg, bad: !!bad };
   render();
   clearTimeout(toast.t);
-  toast.t = setTimeout(() => { S.toast = null; render(); }, 2800);
+  toast.t = setTimeout(() => { S.toast = null; render(); }, 3200);
 }
 
 /* =========================================================== routing */
@@ -363,17 +390,20 @@ function onRoute() {
   if (r[0] === 'office') {
     if (officeAllowed()) {
       if ((!S.off.ov || S.off.ovStale) && !S.off.loading) loadOverview();
-      if (r[1] === 'site' && r[2]) { loadMonths(r[2]); }
-      if (r[1] === 'sites' && S.cfg.docketsLinked && !S.off.dk) loadDocketLocations();
-      if (r[1] === 'site' && S.off.tab === 'dockets' && !S.off.dk) loadDocketLocations();
+      if (r[1] === 'site' && r[2]) loadMonths(r[2], S.off.tab);
+      if (r[1] === 'sites' && S.cfg.oldDockets) loadImportPlan();
     }
-  } else if (staffAllowed() && currentSite()) {
-    if (r[0] === 'upload' && !S.draft && S.up.status === 'idle') S.draft = newDraft();
-    if (!r[0]) loadRecent();
+  } else if (staffAllowed() && hasHome()) {
+    if (r[0] === 'upload' && S.up.status === 'idle') {
+      const kind = uploadKind();
+      if (!S.draft || S.draft.kind !== kind) { discardDraft(); S.draft = newDraft(kind); }
+    }
+    if (!r[0] && !isDriver()) loadRecent();
   }
   window.scrollTo(0, 0);
   render();
 }
+function uploadKind() { return isDriver() ? 'docket' : kindOf(S.route[1]); }
 function officeAllowed() { return S.cfg && (!S.cfg.officePin || S.cfg.officeOk); }
 function staffAllowed() { return S.cfg && (!S.cfg.staffPin || S.cfg.staffOk || S.cfg.officeOk); }
 
@@ -397,8 +427,7 @@ function render() {
 }
 function showNav() {
   if (!S.cfg) return false;
-     if (S.route[0] === 'upload' && staffAllowed() && currentSite()) return false;
-  if (S.route[0] === 'office' && !officeAllowed()) return true;
+  if (S.route[0] === 'upload' && staffAllowed() && hasHome()) return false;
   return true;
 }
 
@@ -406,6 +435,7 @@ function header(office) {
   let chip = null;
   const site = currentSite();
   if (office) chip = h('span', { class: 'chip chip-dark' }, icon('briefcase', 14), h('span', null, 'Office'));
+  else if (isDriver()) chip = h('button', { class: 'chip', onclick: () => go('#/site'), 'aria-label': 'Change to a site' }, icon('truck', 14), h('span', null, 'Driver'));
   else if (site) chip = h('button', { class: 'chip', onclick: () => go('#/site'), 'aria-label': 'Change site' }, icon('pin', 14), h('span', null, site.name));
   return h('header', { class: 'appbar' },
     h('a', { class: 'brand', href: office ? '#/office' : '#/', 'aria-label': 'Sunstate Petroleum home' },
@@ -419,7 +449,7 @@ function nav(office) {
   const homeOn = !office && r[0] !== 'site';
   return h('nav', { class: 'nav' },
     h('a', { href: '#/', class: homeOn ? 'on' : '' }, icon('home', 22), 'Home'),
-    h('a', { href: '#/upload', class: 'fab', 'aria-label': 'Upload an invoice', onclick: (e) => { e.preventDefault(); startUpload(); } }, icon('camera', 26)),
+    h('a', { href: '#/upload', class: 'fab', 'aria-label': 'Upload', onclick: (e) => { e.preventDefault(); if (isDriver()) startUpload('docket'); else openChooser(); } }, icon('camera', 26)),
     h('a', { href: '#/office', class: office ? 'on' : '' }, icon('briefcase', 22), 'Office'));
 }
 
@@ -436,9 +466,9 @@ function view() {
     return officeHomeView();
   }
   if (!staffAllowed()) return loginView('staff');
-  if (r[0] === 'site' || !currentSite()) return pickSiteView();
+  if (r[0] === 'site' || !hasHome()) return pickSiteView();
   if (r[0] === 'upload') return uploadView();
-  return staffHomeView();
+  return isDriver() ? driverHomeView() : staffHomeView();
 }
 
 function busyView() {
@@ -479,16 +509,16 @@ function loginView(role) {
     h('div', { class: 'card card-pad', style: 'text-align:center;padding:30px 20px;margin-top:10px' },
       h('img', { class: 'sym-lg', src: '/assets/symbol-lg.png', alt: '' }),
       h('h1', { class: 'h1' }, office ? 'Office access' : 'Site access'),
-      h('p', { class: 'lead' }, office ? 'Enter the office passcode to see invoices from every site.' : 'Enter your site PIN. You only need to do this once on this phone.'),
+      h('p', { class: 'lead' }, office ? 'Enter the office passcode to see invoices and fuel dockets from every site.' : 'Enter your PIN. You only need to do this once on this phone.'),
       h('form', { onsubmit: submit, style: 'margin-top:18px;text-align:left' },
-        h('label', { class: 'label', for: id }, office ? 'Office passcode' : 'Site PIN'),
+        h('label', { class: 'label', for: id }, office ? 'Office passcode' : 'PIN'),
         h('input', { class: 'input', id, type: 'password', autocomplete: 'current-password', inputmode: office ? null : 'numeric', autofocus: true }),
         errBox, btn)));
 }
 
-/* =========================================================== staff: site */
+/* =========================================================== staff: site or driver */
 function pickSiteView() {
-  const sites = S.cfg.sites.filter((s) => !s.archived);
+  const sites = activeSites();
   const search = h('input', { class: 'input', id: 'site-search', placeholder: 'Search sites', type: 'search', autocomplete: 'off' });
   const list = h('div', { class: 'list' });
   function fill() {
@@ -497,17 +527,25 @@ function pickSiteView() {
     list.replaceChildren.apply(list, shown.length ? shown.map((s) => h('button', { class: 'row', onclick: () => chooseSite(s.id) },
       h('span', { class: 'row-ic' }, icon('store', 20)),
       h('span', { class: 'row-main' }, h('span', { class: 'row-t', style: 'display:block' }, s.name)),
-      s.id === S.siteId ? h('span', { class: 'pill pill-done' }, icon('check', 12), 'Current') : icon('chevR', 18))) : [h('div', { class: 'empty' }, 'No sites match.')]);
+      s.id === S.siteId && !isDriver() ? h('span', { class: 'pill pill-done' }, icon('check', 12), 'Current') : icon('chevR', 18))) : [h('div', { class: 'empty' }, 'No sites match.')]);
   }
   search.addEventListener('input', fill);
   fill();
+  const driverCard = sites.length ? h('div', { class: 'card' }, h('button', { class: 'row', onclick: chooseDriver },
+    h('span', { class: 'row-ic dk' }, icon('truck', 20)),
+    h('span', { class: 'row-main' },
+      h('span', { class: 'row-t', style: 'display:block' }, 'I’m a delivery driver'),
+      h('span', { class: 'row-s', style: 'display:block' }, 'Fuel dockets only, choose the site for each delivery')),
+    isDriver() ? h('span', { class: 'pill pill-done' }, icon('check', 12), 'Current') : icon('chevR', 18))) : null;
   return h('main', { class: 'page stack' },
-    currentSite() ? h('a', { class: 'back', href: '#/' }, icon('chevL', 18), 'Back') : null,
-    h('div', null, h('h1', { class: 'h1' }, 'Which site are you at?'), h('p', { class: 'lead' }, 'Invoices you upload are filed under this site. This phone will remember it.')),
+    hasHome() ? h('a', { class: 'back', href: '#/' }, icon('chevL', 18), 'Back') : null,
+    h('div', null, h('h1', { class: 'h1' }, 'Which site are you at?'), h('p', { class: 'lead' }, 'Invoices and dockets you upload are filed under this site. This phone will remember it.')),
     sites.length ? h('div', { class: 'card' }, sites.length > 6 ? h('div', { style: 'padding:12px 12px 4px' }, search) : null, list)
-              : h('div', { class: 'card' }, h('div', { class: 'empty' }, icon('store', 30), h('p', { class: 'b', style: 'color:var(--ink)' }, 'No sites set up yet'), h('p', null, 'The office adds sites under Office → Manage sites.'), h('a', { class: 'btn btn-dark', href: '#/office', style: 'margin-top:14px' }, icon('briefcase', 16), 'Go to Office'))));
+      : h('div', { class: 'card' }, h('div', { class: 'empty' }, icon('store', 30), h('p', { class: 'b', style: 'color:var(--ink)' }, 'No sites set up yet'), h('p', null, 'The office adds sites under Office → Manage sites.'), h('a', { class: 'btn btn-dark', href: '#/office', style: 'margin-top:14px' }, icon('briefcase', 16), 'Go to Office'))),
+    driverCard);
 }
-function chooseSite(id) { S.siteId = id; LS.set('site', id); S.recent = null; go('#/'); }
+function chooseSite(id) { S.siteId = id; S.mode = 'site'; LS.set('site', id); LS.set('mode', 'site'); S.recent = null; go('#/'); }
+function chooseDriver() { S.siteId = ''; S.mode = 'driver'; LS.set('site', ''); LS.set('mode', 'driver'); S.recent = null; go('#/'); }
 
 /* =========================================================== staff: home */
 async function loadRecent() {
@@ -517,6 +555,14 @@ async function loadRecent() {
     if (S.siteId === site.id) { S.recent = d.items; S.recentErr = ''; }
   } catch (e) { S.recentErr = e.message; }
   render();
+}
+
+function uploadAction(kind, small, fromSheet) {
+  const K = KIND[kind];
+  return h('button', { class: 'action', onclick: () => { if (fromSheet) S.sheet = null; startUpload(kind); } },
+    h('span', { class: 'action-ic' + (kind === 'docket' ? ' ic-dark' : '') }, icon(K.icon, kind === 'docket' ? 24 : 26)),
+    h('span', { class: 'action-txt' }, h('strong', null, K.title), h('small', null, small)),
+    icon('chevR', 20));
 }
 
 function staffHomeView() {
@@ -529,47 +575,86 @@ function staffHomeView() {
       h('h1', { class: 'hero-t' }, site.name),
       h('p', { class: 'hero-s' }, fmtLongDay(S.cfg.today))),
     h('div', { class: 'actions' },
-      h('button', { class: 'action', onclick: startUpload },
-        h('span', { class: 'action-ic' }, icon('file', 26)),
-        h('span', { class: 'action-txt' }, h('strong', null, 'Supplier invoice'), h('small', null, 'Photograph it and send it to the office')),
-        icon('chevR', 20)),
-      h('a', { class: 'action', href: S.cfg.docketsUrl, target: '_blank', rel: 'noopener' },
-        h('span', { class: 'action-ic ic-dark' }, icon('fuel', 24)),
-        h('span', { class: 'action-txt' }, h('strong', null, 'Fuel delivery docket'), h('small', null, 'Opens the Fuel Dockets app')),
-        icon('ext', 18))),
+      uploadAction('invoice', 'Photograph it and send it to the office'),
+      uploadAction('docket', 'Bill of lading or docket for a fuel drop')),
     h('section', { class: 'card' },
       h('div', { class: 'card-h' }, h('h2', null, 'Sent from this site'), h('button', { class: 'link', onclick: () => { S.recent = null; render(); loadRecent(); } }, 'Refresh')),
       recentList()),
     h('p', { class: 'footer' }, h('b', null, 'SUNSTATE PETROLEUM'), ' · Site Invoices'));
 }
 
+function sentRow(r, sub) {
+  const kind = r.kind || 'invoice';
+  return h('div', { class: 'row' },
+    h('span', { class: 'row-ic' + (kind === 'docket' ? ' dk' : '') }, icon(KIND[kind].icon, 19)),
+    h('span', { class: 'row-main' },
+      h('span', { class: 'row-t', style: 'display:block' }, (kind === 'docket' ? 'Fuel docket · ' : '') + r.supplier),
+      h('span', { class: 'row-s', style: 'display:block' }, sub)),
+    r.status === 'processed' ? h('span', { class: 'pill pill-done' }, 'Processed') : h('span', { class: 'pill pill-new' }, 'Sent'));
+}
+
 function recentList() {
   if (S.recentErr && !S.recent) return h('div', { class: 'empty' }, S.recentErr);
   if (!S.recent) return h('div', { class: 'empty pulse' }, 'Loading…');
   if (!S.recent.length) return h('div', { class: 'empty' }, icon('file', 28), 'Nothing sent yet this month.');
-  return h('div', { class: 'list' }, S.recent.map((r) => h('div', { class: 'row' },
-    h('span', { class: 'row-ic' }, icon('file', 19)),
-    h('span', { class: 'row-main' },
-      h('span', { class: 'row-t', style: 'display:block' }, r.supplier),
-      h('span', { class: 'row-s', style: 'display:block' }, [r.invoiceNo ? '#' + r.invoiceNo : null, plural(r.pages, 'page'), fmtWhen(r.uploadedAt), r.by].filter(Boolean).join(' · '))),
-    r.status === 'processed' ? h('span', { class: 'pill pill-done' }, 'Processed') : h('span', { class: 'pill pill-new' }, 'Sent'))));
+  return h('div', { class: 'list' }, S.recent.map((r) => sentRow(r, [r.invoiceNo ? '#' + r.invoiceNo : null, plural(r.pages, 'page'), fmtWhen(r.uploadedAt), r.by].filter(Boolean).join(' · '))));
+}
+
+function driverHomeView() {
+  const first = (S.by || '').split(' ')[0];
+  return h('main', { class: 'page stack' },
+    h('section', { class: 'hero' },
+      h('img', { class: 'mark', src: '/assets/symbol-lg.png', alt: '' }),
+      h('p', { class: 'hero-k' }, greeting() + (first ? ', ' + first : '')),
+      h('h1', { class: 'hero-t' }, 'Fuel deliveries'),
+      h('p', { class: 'hero-s' }, fmtLongDay(S.cfg.today))),
+    h('div', { class: 'actions' }, uploadAction('docket', 'Photograph the docket and file it under the delivery site')),
+    h('section', { class: 'card' },
+      h('div', { class: 'card-h' }, h('h2', null, 'Sent from this phone')),
+      S.sentLocal.length
+        ? h('div', { class: 'list' }, S.sentLocal.map((r) => sentRow(r, [r.invoiceNo ? '#' + r.invoiceNo : null, (r.sites || []).join(', '), plural(r.pages, 'page'), fmtWhen(r.uploadedAt)].filter(Boolean).join(' · '))))
+        : h('div', { class: 'empty' }, icon('fuel', 28), 'Nothing sent from this phone yet.')),
+    h('p', { class: 'footer' }, h('b', null, 'SUNSTATE PETROLEUM'), ' · Fuel dockets'));
 }
 
 /* =========================================================== staff: upload */
-function newDraft() {
-  return { pages: [], preparing: 0, f: { supplier: '', invoiceNo: '', invoiceDate: S.cfg.today, total: '', note: '', by: S.by || '' }, touched: {}, filled: {}, auto: { status: 'idle' }, slot: null, err: '' };
+function newDraft(kind) {
+  const site = currentSite();
+  return {
+    kind,
+    pages: [], preparing: 0,
+    f: { supplier: '', otherSupplier: '', invoiceNo: '', invoiceDate: S.cfg.today, total: '', note: '', by: S.by || '' },
+    sites: kind === 'docket' && site && !isDriver() ? [site.id] : [],
+    touched: {}, filled: {}, auto: { status: 'idle' }, slot: null, err: '',
+  };
 }
-function startUpload() {
+function loadSuppliers() {
+  api('/api/staff/suppliers').then((d) => {
+    S.suppliers = d.suppliers || [];
+    const dl = document.getElementById('sup-list');
+    if (dl) dl.replaceChildren.apply(dl, S.suppliers.map((s) => h('option', { value: s })));
+  }).catch(() => {});
+}
+function openChooser() { S.sheet = { kind: 'chooser' }; render(); }
+function startUpload(kind) {
   if (!S.cfg) return;
+  if (isDriver()) kind = 'docket';
   if (S.up.status === 'done' || S.up.status === 'error') S.up = { status: 'idle' };
-  if (!S.draft) S.draft = newDraft();
-  if (!S.suppliers.length) api('/api/staff/suppliers').then((d) => { S.suppliers = d.suppliers || []; if (S.route[0] === 'upload') { const dl = document.getElementById('sup-list'); if (dl) dl.replaceChildren.apply(dl, S.suppliers.map((s) => h('option', { value: s }))); } }).catch(() => {});
-  go('#/upload');
+  const d = S.draft;
+  if (d && d.kind !== kind && (d.pages.length || d.f.supplier)) {
+    openDialog('Discard the ' + KIND[d.kind].noun + ' you started?', 'You have a ' + KIND[d.kind].noun + ' with photos or details that has not been sent yet.', [
+      { label: 'Keep it', run: () => go('#/upload/' + d.kind) },
+      { label: 'Discard', danger: true, run: () => { discardDraft(); S.draft = newDraft(kind); go('#/upload/' + kind); } }]);
+    return;
+  }
+  if (!d || d.kind !== kind) { discardDraft(); S.draft = newDraft(kind); }
+  if (kind === 'invoice' && !S.suppliers.length) loadSuppliers();
+  go('#/upload/' + kind);
 }
 function cancelUpload() {
   const d = S.draft;
   if (d && (d.pages.length || d.f.supplier) && S.up.status !== 'done') {
-    openDialog('Discard this invoice?', 'The photos and details you entered will be cleared.', [
+    openDialog('Discard this ' + KIND[d.kind].noun + '?', 'The photos and details you entered will be cleared.', [
       { label: 'Keep editing' },
       { label: 'Discard', danger: true, run: () => { discardDraft(); go('#/'); } }]);
     return;
@@ -584,7 +669,10 @@ function discardDraft() {
 function uploadView() {
   if (S.up.status === 'sending' || S.up.status === 'error') return sendingView();
   if (S.up.status === 'done') return doneView();
-  const d = S.draft || (S.draft = newDraft());
+  const kind = uploadKind();
+  if (!S.draft || S.draft.kind !== kind) S.draft = newDraft(kind);
+  const d = S.draft;
+  const K = KIND[kind];
   const cam = h('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'hidden', id: 'in-cam', onchange: (e) => { addPages(e.target.files); e.target.value = ''; } });
   const lib = h('input', { type: 'file', accept: 'image/*', multiple: true, class: 'hidden', id: 'in-lib', onchange: (e) => { addPages(e.target.files); e.target.value = ''; } });
 
@@ -610,38 +698,76 @@ function uploadView() {
   };
 
   let autoNote = null;
-  if (d.auto.status === 'reading') autoNote = h('div', { class: 'note' }, h('span', { class: 'spin', style: 'display:inline-flex' }, icon('spark', 16)), 'Reading the invoice to fill in the details…');
-  else if (d.auto.status === 'done') autoNote = h('div', { class: 'note ok' }, icon('spark', 16), h('span', null, d.auto.count ? 'Filled in from the photo. Check the highlighted fields before sending.' : 'Could not read the details from the photo. Please type them in.'));
-  else if (d.auto.status === 'failed') autoNote = h('div', { class: 'note' }, icon('alert', 16), h('span', null, 'Could not read the invoice automatically. Please type the details in.'));
+  if (d.auto.status === 'reading') autoNote = h('div', { class: 'note' }, h('span', { class: 'spin', style: 'display:inline-flex' }, icon('spark', 16)), 'Reading the ' + K.noun + ' to fill in the details…');
+  else if (d.auto.status === 'done') autoNote = h('div', { class: 'note ok' }, icon('spark', 16), h('span', null, d.auto.count ? 'Filled in from the photo. Check the highlighted details before sending.' : 'Could not read the details from the photo. Please fill them in.'));
+  else if (d.auto.status === 'failed') autoNote = h('div', { class: 'note' }, icon('alert', 16), h('span', null, 'Could not read the ' + K.noun + ' automatically. Please fill the details in.'));
+
+  let details;
+  if (kind === 'invoice') {
+    details = [
+      field('supplier', 'Supplier', { list: 'sup-list', autocomplete: 'off', autocapitalize: 'words', placeholder: 'e.g. Coca-Cola, Bidvest' }),
+      h('datalist', { id: 'sup-list' }, S.suppliers.map((s) => h('option', { value: s }))),
+      h('div', { class: 'grid2', style: 'margin-top:14px' },
+        field('invoiceNo', K.refLabel, { autocomplete: 'off', autocapitalize: 'characters' }, true),
+        field('invoiceDate', K.dateLabel, { type: 'date' })),
+      h('div', { style: 'margin-top:14px' }, field('total', 'Total inc GST', { inputmode: 'decimal', autocomplete: 'off', placeholder: '0.00' }, true)),
+      h('div', { style: 'margin-top:14px' }, field('note', 'Note for the office', { tag: 'textarea', rows: 2, placeholder: 'e.g. short delivery, damaged stock' }, true)),
+    ];
+  } else {
+    details = [
+      sitesField(d),
+      h('div', { style: 'margin-top:16px' }, h('span', { class: 'label' }, 'Supplier'), supplierSeg(d)),
+      d.f.supplier === 'Other' ? h('div', { style: 'margin-top:12px' }, field('otherSupplier', 'Supplier name', { autocomplete: 'off', autocapitalize: 'words', placeholder: 'e.g. Ampol' }, true)) : null,
+      h('div', { class: 'grid2', style: 'margin-top:14px' },
+        field('invoiceNo', K.refLabel, { autocomplete: 'off', autocapitalize: 'characters' }, true),
+        field('invoiceDate', K.dateLabel, { type: 'date' })),
+      h('div', { style: 'margin-top:14px' }, field('note', 'Note for the office', { tag: 'textarea', rows: 2, placeholder: 'e.g. split load, short delivery' }, true)),
+    ];
+  }
 
   const sendBtn = h('button', { class: 'btn btn-primary', id: 'send-btn', onclick: send }, 'Send to office', icon('chevR', 18));
   setTimeout(syncSend, 0);
 
   return h('main', { class: 'page stack', style: 'padding-bottom:calc(120px + env(safe-area-inset-bottom))' },
     h('div', null,
-      h('h1', { class: 'h1' }, 'Supplier invoice'),
-      h('p', { class: 'lead' }, 'Take a photo of every page, flat and in good light. Filed under ', h('b', null, currentSite().name), '.')),
+      h('h1', { class: 'h1' }, K.title),
+      kind === 'invoice'
+        ? h('p', { class: 'lead' }, 'Take a photo of every page, flat and in good light. Filed under ', h('b', null, currentSite().name), '.')
+        : h('p', { class: 'lead' }, 'Take a photo of every page of the docket, flat and in good light.')),
     cam, lib,
     h('section', { class: 'card card-pad' }, h('p', { class: 'label', style: 'margin-bottom:10px' }, 'Photos', d.pages.length ? h('em', null, ' · ' + plural(d.pages.length, 'page')) : null), photos),
     autoNote,
     h('section', { class: 'card card-pad' },
-      field('supplier', 'Supplier', { list: 'sup-list', autocomplete: 'off', autocapitalize: 'words', placeholder: 'e.g. Coca-Cola, Bidvest' }),
-      h('datalist', { id: 'sup-list' }, S.suppliers.map((s) => h('option', { value: s }))),
-      h('div', { class: 'grid2', style: 'margin-top:14px' },
-        field('invoiceNo', 'Invoice no.', { autocomplete: 'off', autocapitalize: 'characters' }, true),
-        field('invoiceDate', 'Invoice date', { type: 'date' })),
-      h('div', { style: 'margin-top:14px' }, field('total', 'Total inc GST', { inputmode: 'decimal', autocomplete: 'off', placeholder: '0.00' }, true)),
-      h('div', { style: 'margin-top:14px' }, field('note', 'Note for the office', { tag: 'textarea', rows: 2, placeholder: 'e.g. short delivery, damaged stock' }, true)),
+      details,
       h('div', { class: 'sep' }),
       field('by', 'Your name', { autocomplete: 'name', autocapitalize: 'words' })),
     d.err ? h('div', { class: 'err', id: 'draft-err' }, icon('alert', 18), d.err) : null,
     h('div', { class: 'footbar' }, h('div', { class: 'footbar-in' },
       h('button', { class: 'btn', onclick: cancelUpload }, 'Cancel'), sendBtn)));
 }
+
+function sitesField(d) {
+  const hl = d.filled.sites && !d.touched.sites;
+  const chosen = d.sites.map((id) => h('span', { class: 'tag' + (hl ? ' filled' : '') }, siteName(id),
+    h('button', { 'aria-label': 'Remove ' + siteName(id), onclick: () => { d.sites = d.sites.filter((x) => x !== id); d.touched.sites = true; render(); } }, icon('x', 12))));
+  const rest = activeSites().filter((s) => !d.sites.includes(s.id));
+  const sel = rest.length && d.sites.length < MAX_DOCKET_SITES ? h('select', {
+    class: 'input', id: 'f-addsite', 'aria-label': 'Add a delivery site', style: 'margin-top:' + (d.sites.length ? '10px' : '0'),
+    onchange: (e) => { if (!e.target.value) return; d.sites.push(e.target.value); d.touched.sites = true; render(); },
+  }, h('option', { value: '' }, d.sites.length ? '+ Also delivered to (split load)…' : 'Choose the site…'), rest.map((s) => h('option', { value: s.id }, s.name))) : null;
+  return h('div', null, h('span', { class: 'label' }, 'Delivered to'), d.sites.length ? h('div', { class: 'tags' }, chosen) : null, sel);
+}
+function supplierSeg(d) {
+  const hl = d.filled.supplier && !d.touched.supplier;
+  return h('div', { class: 'seg' + (hl ? ' filled' : ''), role: 'radiogroup', 'aria-label': 'Supplier' }, DOCKET_SUPPLIERS.map((s) => h('button', {
+    class: d.f.supplier === s ? 'on' : '', role: 'radio', 'aria-checked': d.f.supplier === s ? 'true' : 'false',
+    onclick: () => { d.f.supplier = s; d.touched.supplier = true; render(); },
+  }, s)));
+}
 function syncSend() {
   const b = document.getElementById('send-btn'); const d = S.draft;
   if (!b || !d) return;
-  const ready = d.pages.length && !d.preparing && d.f.supplier.trim() && d.f.by.trim();
+  const ready = d.pages.length && !d.preparing && d.f.supplier.trim() && d.f.by.trim() && (d.kind !== 'docket' || d.sites.length);
   b.style.opacity = ready ? '1' : '.55';
 }
 
@@ -651,7 +777,7 @@ async function addPages(fileList) {
   if (!files.length) return;
   d.err = '';
   for (const f of files) {
-    if (d.pages.length >= 30) { toast('That is the most pages one invoice can have.', true); break; }
+    if (d.pages.length >= 30) { toast('That is the most pages one ' + KIND[d.kind].noun + ' can have.', true); break; }
     d.preparing++; render();
     try {
       const out = await compressImage(f, 2200, 0.85);
@@ -694,36 +820,45 @@ async function blobToBase64(blob) {
   return btoa(s);
 }
 
-/* ---------- auto-fill: reads the photo through Fuel Dockets' Claude proxy */
-const AUTOFILL_PROMPT = 'These photos are the pages of one supplier invoice (or delivery docket) received at an Australian service station. ' +
-  'Read them and return the details as JSON only, with no other text:\n' +
-  '{"supplier":"trading name of the business that issued the invoice, short and without Pty Ltd","invoiceNo":"invoice or document number","invoiceDate":"YYYY-MM-DD","total":"total amount payable including GST as a plain number, e.g. 1234.50"}\n' +
-  'The supplier is the company that sent the invoice, not the customer (the customer is the service station). Use null for anything you cannot read clearly. Dates on Australian invoices are day/month/year.';
-
+/* ---------- auto-fill: the Worker reads the photos with Claude and returns the details */
 async function runAutofill() {
   const d = S.draft; if (!d || !d.pages.length) return;
   d.auto = { status: 'reading' }; render();
   try {
-    const pages = d.pages.slice(0, 3);
-    const imgs = [];
-    for (const p of pages) { const small = await compressImage(p.blob, 1500, 0.8); imgs.push(await blobToBase64(small.blob)); }
-    const body = { model: S.cfg.autofillModel, max_tokens: 300, messages: [{ role: 'user', content: imgs.map((b) => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b } })).concat([{ type: 'text', text: AUTOFILL_PROMPT }]) }] };
-    const res = await api('/api/staff/autofill', { json: body });
-    const text = ((res && res.content) || []).map((b) => b.text || '').join('');
-    const m = text.match(/\{[\s\S]*\}/);
-    const out = m ? JSON.parse(m[0]) : {};
+    const images = [];
+    for (const p of d.pages.slice(0, 3)) { const small = await compressImage(p.blob, 1500, 0.8); images.push(await blobToBase64(small.blob)); }
+    const res = await api('/api/staff/autofill', { json: { kind: d.kind, images } });
+    const out = (res && res.fields) || {};
     if (S.draft !== d) return;
     let count = 0;
     const put = (k, v) => { if (v == null || v === '' || d.touched[k]) return; d.f[k] = String(v); d.filled[k] = true; count++; };
-    put('supplier', matchSupplier(out.supplier));
-    put('invoiceNo', out.invoiceNo ? String(out.invoiceNo).slice(0, 40) : '');
-    if (out.invoiceDate && /^\d{4}-\d{2}-\d{2}$/.test(out.invoiceDate)) put('invoiceDate', out.invoiceDate);
-    if (out.total != null && !isNaN(Number(String(out.total).replace(/[$,]/g, '')))) put('total', Number(String(out.total).replace(/[$,]/g, '')).toFixed(2));
+    if (d.kind === 'docket') {
+      if (DOCKET_SUPPLIERS.includes(out.supplier)) put('supplier', out.supplier);
+      put('otherSupplier', out.otherSupplier);
+      put('invoiceNo', out.invoiceNo);
+      put('invoiceDate', out.invoiceDate);
+      // A driver's phone has no site of its own, so use the site(s) written on the docket.
+      if (isDriver() && !d.touched.sites) {
+        const ids = [];
+        (out.locations || []).forEach((name) => { const s = matchSiteName(name); if (s && !ids.includes(s.id)) ids.push(s.id); });
+        if (ids.length) { d.sites = ids.slice(0, MAX_DOCKET_SITES); d.filled.sites = true; count++; }
+      }
+    } else {
+      put('supplier', matchSupplier(out.supplier));
+      put('invoiceNo', out.invoiceNo);
+      put('invoiceDate', out.invoiceDate);
+      put('total', out.total);
+    }
     d.auto = { status: 'done', count };
   } catch (e) {
     if (S.draft === d) d.auto = { status: 'failed' };
   }
   if (S.route[0] === 'upload' && S.up.status === 'idle') render();
+}
+function matchSiteName(name) {
+  const n = String(name || '').trim().toLowerCase();
+  if (!n) return null;
+  return activeSites().find((s) => s.name.toLowerCase() === n) || suggestSite(name, activeSites());
 }
 function normSup(s) { return String(s || '').toLowerCase().replace(/\b(pty|ltd|limited|australia|aust|the|co|inc)\b/g, '').replace(/[^a-z0-9]/g, ''); }
 function matchSupplier(name) {
@@ -750,40 +885,54 @@ function lev(a, b) {
 /* ---------- send */
 async function send() {
   const d = S.draft; if (!d) return;
-  const missing = !d.pages.length ? 'Add a photo of the invoice.' : d.preparing ? 'Wait for the photos to finish preparing.' : !d.f.supplier.trim() ? 'Enter the supplier.' : !d.f.by.trim() ? 'Enter your name so the office knows who sent it.' : '';
+  const K = KIND[d.kind];
+  const missing = !d.pages.length ? 'Add a photo of the ' + K.noun + '.'
+    : d.preparing ? 'Wait for the photos to finish preparing.'
+    : d.kind === 'docket' && !d.sites.length ? 'Choose the site the fuel was delivered to.'
+    : !d.f.supplier.trim() ? (d.kind === 'docket' ? 'Choose the supplier.' : 'Enter the supplier.')
+    : !d.f.by.trim() ? 'Enter your name so the office knows who sent it.' : '';
   if (missing) { d.err = missing; render(); const e = document.getElementById('draft-err'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
   d.err = '';
   S.by = d.f.by.trim(); LS.set('by', S.by);
-  const site = currentSite();
+  const sites = d.kind === 'docket' ? d.sites.slice() : [currentSite().id];
+  const supplier = d.kind === 'docket' && d.f.supplier === 'Other' ? (d.f.otherSupplier.trim() || 'Other') : d.f.supplier.trim();
   S.up = { status: 'sending', done: d.pages.filter((p) => p.sent).length, total: d.pages.length, msg: 'Starting…' };
   render();
   try {
-    if (!d.slot || d.slot.site !== site.id) {
-      const start = await api('/api/staff/start', { json: { site: site.id, supplier: d.f.supplier, invoiceNo: d.f.invoiceNo } });
+    if (!d.slot || d.slot.site !== sites[0]) {
+      const start = await api('/api/staff/start', { json: { kind: d.kind, site: sites[0], alsoSites: sites.slice(1), supplier, invoiceNo: d.f.invoiceNo } });
       if (start.duplicate && !d.dupOk) {
         S.up = { status: 'idle' }; render();
         const dup = start.duplicate;
-        openDialog('Already sent?', 'Invoice ' + (dup.invoiceNo ? '#' + dup.invoiceNo + ' ' : '') + 'from ' + dup.supplier + ' was sent ' + fmtWhen(dup.uploadedAt).replace(/^Today/, 'today') + (dup.by ? ' by ' + dup.by : '') + '. Send it again anyway?', [
+        openDialog('Already sent?', K.Noun + ' ' + (dup.invoiceNo ? '#' + dup.invoiceNo + ' ' : '') + 'from ' + dup.supplier + ' was sent' + (dup.siteName && (d.kind === 'docket' || dup.siteName !== siteName(sites[0])) ? ' for ' + dup.siteName : '') + ' ' + fmtWhen(dup.uploadedAt).replace(/^Today/, 'today') + (dup.by ? ' by ' + dup.by : '') + '. Send it again anyway?', [
           { label: 'Cancel' },
           { label: 'Send again', primary: true, run: () => { d.dupOk = true; send(); } }]);
         return;
       }
-      d.slot = { site: site.id, id: start.id, month: start.month };
+      d.slot = { site: sites[0], id: start.id, month: start.month };
       d.pages.forEach((p) => { p.sent = false; });
     }
     for (let i = 0; i < d.pages.length; i++) {
       if (d.pages[i].sent) continue;
       S.up.msg = 'Uploading page ' + (i + 1) + ' of ' + d.pages.length; render();
-      await api('/api/staff/page/' + [d.slot.site, d.slot.month, d.slot.id, i + 1].map(encodeURIComponent).join('/'), { method: 'PUT', body: d.pages[i].blob, type: 'image/jpeg' });
+      await api('/api/staff/page/' + [d.slot.site, d.slot.month, d.slot.id, i + 1].map(encodeURIComponent).join('/') + '?kind=' + d.kind, { method: 'PUT', body: d.pages[i].blob, type: 'image/jpeg' });
       d.pages[i].sent = true;
       S.up.done = d.pages.filter((p) => p.sent).length; render();
     }
-    S.up.msg = 'Finishing…'; render();
-    const fin = await api('/api/staff/finish', { json: Object.assign({ site: d.slot.site, month: d.slot.month, id: d.slot.id, pages: d.pages.length }, d.f) });
-    S.up = { status: 'done', record: fin.record };
+    S.up.msg = sites.length > 1 ? 'Filing under ' + sites.length + ' sites…' : 'Finishing…'; render();
+    const fin = await api('/api/staff/finish', { json: {
+      kind: d.kind, site: d.slot.site, month: d.slot.month, id: d.slot.id, pages: d.pages.length,
+      supplier, invoiceNo: d.f.invoiceNo, invoiceDate: d.f.invoiceDate, total: d.kind === 'invoice' ? d.f.total : '', note: d.f.note, by: d.f.by,
+      alsoSites: sites.slice(1),
+    } });
+    S.up = { status: 'done', record: fin.record, kind: d.kind, sites };
+    if (isDriver()) {
+      S.sentLocal = [{ kind: d.kind, supplier, invoiceNo: fin.record.invoiceNo, sites: sites.map(siteName), pages: fin.record.pages, uploadedAt: fin.record.uploadedAt }].concat(S.sentLocal).slice(0, 10);
+      LS.set('sent', S.sentLocal);
+    }
     d.pages.forEach((p) => URL.revokeObjectURL(p.url));
     S.draft = null; S.recent = null;
-    if (fin.record && fin.record.supplier && !S.suppliers.includes(fin.record.supplier)) S.suppliers.unshift(fin.record.supplier);
+    if (d.kind === 'invoice' && fin.record && fin.record.supplier && !S.suppliers.includes(fin.record.supplier)) S.suppliers.unshift(fin.record.supplier);
   } catch (e) {
     S.up = Object.assign({}, S.up, { status: 'error', error: e.message });
   }
@@ -812,21 +961,25 @@ function sendingView() {
 }
 
 function doneView() {
-  const r = S.up.record || {};
+  const u = S.up;
+  const r = u.record || {};
+  const kind = u.kind || r.kind || 'invoice';
+  const K = KIND[kind];
+  const names = (u.sites || [r.site]).map(siteName);
   return h('main', { class: 'page' },
     h('div', { class: 'center', style: 'padding-bottom:10px' },
       h('div', { class: 'badge-ok' }, icon('check', 48)),
       h('h1', { class: 'h1' }, 'Sent to the office'),
-      h('p', { class: 'lead' }, 'Filed under ', h('b', null, siteName(r.site)), '.')),
+      h('p', { class: 'lead' }, 'Filed under ', h('b', null, names.join(', ')), '.')),
     h('section', { class: 'card card-pad' }, h('dl', { class: 'dl' },
       h('dt', null, 'Supplier'), h('dd', null, r.supplier || ''),
-      r.invoiceNo ? [h('dt', null, 'Invoice no.'), h('dd', null, r.invoiceNo)] : null,
-      r.invoiceDate ? [h('dt', null, 'Invoice date'), h('dd', null, fmtDay(r.invoiceDate))] : null,
+      r.invoiceNo ? [h('dt', null, K.refLabel), h('dd', null, r.invoiceNo)] : null,
+      r.invoiceDate ? [h('dt', null, K.dateLabel), h('dd', null, fmtDay(r.invoiceDate))] : null,
       r.total ? [h('dt', null, 'Total'), h('dd', null, fmtMoney(r.total))] : null,
       h('dt', null, 'Pages'), h('dd', null, String(r.pages || '')))),
     h('div', { class: 'btn-row', style: 'margin-top:18px' },
       h('button', { class: 'btn', onclick: () => { S.up = { status: 'idle' }; go('#/'); } }, 'Done'),
-      h('button', { class: 'btn btn-primary', onclick: () => { S.up = { status: 'idle' }; S.draft = newDraft(); render(); window.scrollTo(0, 0); } }, icon('camera', 18), 'Upload another')));
+      h('button', { class: 'btn btn-primary', onclick: () => { S.up = { status: 'idle' }; S.draft = newDraft(kind); render(); window.scrollTo(0, 0); } }, icon('camera', 18), 'Send another ' + K.noun)));
 }
 
 /* =========================================================== sheets & dialogs */
@@ -834,9 +987,10 @@ function openDialog(title, text, actions) { S.sheet = { kind: 'dialog', title, t
 function closeSheet() { S.sheet = null; render(); }
 function sheetView() {
   const s = S.sheet;
+  const stop = (e) => e.stopPropagation();
   let inner;
   if (s.kind === 'dialog') {
-    inner = h('div', { class: 'sheet dialog', role: 'dialog', 'aria-modal': 'true', onclick: (e) => e.stopPropagation() },
+    inner = h('div', { class: 'sheet dialog', role: 'dialog', 'aria-modal': 'true', onclick: stop },
       h('div', { class: 'sheet-b' },
         h('h2', { class: 'h2' }, s.title),
         s.text ? h('p', { class: 'lead', style: 'margin-top:6px;font-size:15px' }, s.text) : null,
@@ -845,7 +999,15 @@ function sheetView() {
           class: 'btn' + (a.primary ? ' btn-primary' : '') + (a.danger ? ' btn-danger' : ''),
           onclick: async () => { if (a.keepOpen) { a.run && a.run(); return; } S.sheet = null; render(); if (a.run) await a.run(); },
         }, a.label)))));
-  } else if (s.kind === 'invoice') inner = invoiceSheet(s);
+  } else if (s.kind === 'chooser') {
+    inner = h('div', { class: 'sheet dialog', role: 'dialog', 'aria-modal': 'true', onclick: stop },
+      h('div', { class: 'sheet-b' },
+        h('h2', { class: 'h2' }, 'What are you sending?'),
+        h('div', { class: 'actions', style: 'margin-top:14px' },
+          uploadAction('invoice', 'Photograph it and send it to the office', true),
+          uploadAction('docket', 'Bill of lading or docket for a fuel drop', true)),
+        h('button', { class: 'btn btn-block', style: 'margin-top:14px', onclick: closeSheet }, 'Cancel')));
+  } else if (s.kind === 'record') inner = recordSheet(s);
   return h('div', { class: 'scrim', onclick: closeSheet }, inner);
 }
 
@@ -856,51 +1018,48 @@ async function loadOverview() {
   catch (e) { S.off.ovErr = e.message; }
   S.off.loading = false; render();
 }
-async function loadMonths(site) {
+async function loadMonths(site, kind) {
+  const key = kind + '|' + site;
   try {
-    const d = await api('/api/office/months?site=' + encodeURIComponent(site));
-    S.off.months[site] = d.months;
-    if (!S.off.month[site]) S.off.month[site] = d.months[0];
+    const d = await api('/api/office/months?kind=' + kind + '&site=' + encodeURIComponent(site));
+    S.off.months[key] = d.months;
+    if (!S.off.month[key] || !d.months.includes(S.off.month[key])) S.off.month[key] = d.months[0];
     render();
-    loadInvoices(site, S.off.month[site]);
+    loadRecords(site, kind, S.off.month[key]);
   } catch (e) { toast(e.message, true); }
 }
-async function loadInvoices(site, month) {
-  const key = site + '|' + month;
+async function loadRecords(site, kind, month) {
+  const key = kind + '|' + site + '|' + month;
   try {
-    const d = await api('/api/office/invoices?site=' + encodeURIComponent(site) + '&month=' + encodeURIComponent(month));
-    S.off.inv[key] = d.invoices;
-  } catch (e) { S.off.inv[key] = { error: e.message }; }
+    const d = await api('/api/office/records?kind=' + kind + '&site=' + encodeURIComponent(site) + '&month=' + encodeURIComponent(month));
+    S.off.recs[key] = d.records;
+  } catch (e) { S.off.recs[key] = { error: e.message }; }
   render();
 }
-async function loadDocketLocations() {
-  S.off.dk = 'loading'; S.off.dkErr = '';
-  try { const d = await api('/api/office/dockets/locations'); S.off.dk = d.locations; }
-  catch (e) { S.off.dk = null; S.off.dkErr = e.message; }
-  render();
-}
-function refreshOffice() { S.off.ov = null; S.off.inv = {}; S.off.dk = null; S.off.dkPhotos = {}; onRoute(); }
-function pageUrl(r, n, download) { return '/api/office/page/' + [r.site, r.month, r.id, n].map(encodeURIComponent).join('/') + (download ? '?download=' + encodeURIComponent(download) : ''); }
+function refreshOffice() { S.off.ov = null; S.off.recs = {}; S.off.months = {}; S.off.imp = null; onRoute(); }
+function pageUrl(r, n, download) { return '/api/office/page/' + [r.site, r.month, r.id, n].map(encodeURIComponent).join('/') + '?kind=' + (r.kind || 'invoice') + (download ? '&download=' + encodeURIComponent(download) : ''); }
 function updateLocalRecord(rec) {
-  const key = rec.site + '|' + rec.month;
-  const list = S.off.inv[key];
+  const list = S.off.recs[rec.kind + '|' + rec.site + '|' + rec.month];
   if (Array.isArray(list)) { const i = list.findIndex((x) => x.id === rec.id); if (i >= 0) list[i] = rec; }
   S.off.ovStale = true; // counts changed; reloaded when the office home is next shown
 }
+function ovSite(id) { return S.off.ov && S.off.ov.sites.find((s) => s.id === id); }
 
 /* =========================================================== office: home */
 function officeHomeView() {
   const o = S.off.ov;
   const head = h('div', { style: 'display:flex;align-items:flex-end;justify-content:space-between;gap:10px' },
-    h('div', null, h('h1', { class: 'h1' }, 'Office'), h('p', { class: 'lead' }, 'Supplier invoices from every site.')),
+    h('div', null, h('h1', { class: 'h1' }, 'Office'), h('p', { class: 'lead' }, 'Supplier invoices and fuel dockets from every site.')),
     h('button', { class: 'iconbtn', onclick: refreshOffice, 'aria-label': 'Refresh' }, icon('refresh', 18)));
   if (!o) {
     return h('main', { class: 'page stack wide' }, head,
       S.off.ovErr ? h('div', { class: 'err' }, icon('alert', 18), S.off.ovErr) : h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading sites…')));
   }
-  const sites = o.sites.filter((s) => !s.archived || s.newCount);
+  const sites = o.sites.filter((s) => !s.archived || s.newCount || s.newDockets);
   const newAll = [];
   sites.forEach((s) => s.newRecords.forEach((r) => newAll.push(Object.assign({ siteName: s.name }, r))));
+  const nDk = newAll.filter((r) => r.kind === 'docket').length;
+  const nInv = newAll.length - nDk;
   const pinWarn = !S.cfg.officePin ? h('div', { class: 'note' }, icon('lock', 16), h('span', null, 'Anyone with the link can open this office screen. Add an OFFICE_PIN secret in Cloudflare to lock it (see the README).')) : null;
 
   if (!sites.length) {
@@ -908,7 +1067,7 @@ function officeHomeView() {
       h('section', { class: 'card card-pad', style: 'text-align:center;padding:28px 18px' },
         h('img', { class: 'sym-lg', src: '/assets/symbol-lg.png', alt: '' }),
         h('h2', { class: 'h2' }, 'Add your sites to get started'),
-        h('p', { class: 'lead', style: 'max-width:380px;margin:6px auto 16px' }, 'Staff pick their site the first time they open the app, and every invoice is filed under it.'),
+        h('p', { class: 'lead', style: 'max-width:380px;margin:6px auto 16px' }, 'Staff pick their site the first time they open the app, and every invoice and docket is filed under a site.'),
         h('a', { class: 'btn btn-primary', href: '#/office/sites' }, icon('plus', 18), 'Add sites')));
   }
 
@@ -916,11 +1075,13 @@ function officeHomeView() {
   return h('main', { class: 'page stack wide' }, head, pinWarn,
     h('section', { class: 'hero dark' },
       h('img', { class: 'mark', src: '/assets/symbol-lg.png', alt: '' }),
-      h('p', { class: 'hero-k' }, 'New invoices to process'),
-      h('div', { class: 'big' }, String(newAll.length)),
+      h('p', { class: 'hero-k' }, 'New to process'),
+      h('div', { class: 'stats' },
+        h('div', null, h('div', { class: 'big' }, String(nInv)), h('div', { class: 'stat-l' }, nInv === 1 ? 'invoice' : 'invoices')),
+        h('div', null, h('div', { class: 'big' }, String(nDk)), h('div', { class: 'stat-l' }, nDk === 1 ? 'fuel docket' : 'fuel dockets'))),
       h('p', { class: 'hero-s' }, newAll.length ? 'From ' + plural(new Set(newAll.map((r) => r.site)).size, 'site') + ' · last ' + o.months.length + ' months' : 'All caught up'),
       h('div', { class: 'hero-row' },
-        h('button', { class: 'btn btn-white btn-sm', disabled: !newAll.length, onclick: () => downloadZip(newAll, 'New invoices ' + S.cfg.today + '.zip', true) }, icon('download', 16), 'Download all new (ZIP)'))),
+        h('button', { class: 'btn btn-white btn-sm', disabled: !newAll.length, onclick: () => downloadZip(newAll, 'New ' + S.cfg.today + '.zip', true) }, icon('download', 16), 'Download all new (ZIP)'))),
     pm ? markPrompt(pm) : null,
     h('section', { class: 'card' },
       h('div', { class: 'card-h' }, h('h2', null, 'Sites'), h('span', { class: 'sm muted' }, fmtMonthLong(o.month))),
@@ -928,36 +1089,35 @@ function officeHomeView() {
         h('span', { class: 'row-ic' }, icon('store', 19)),
         h('span', { class: 'row-main' },
           h('span', { class: 'row-t', style: 'display:block' }, s.name),
-          h('span', { class: 'row-s', style: 'display:block' }, plural(s.monthTotal, 'invoice') + ' this month' + (s.dockets.length ? ' · dockets linked' : ''))),
-        s.newCount ? h('span', { class: 'pill pill-count' }, String(s.newCount)) : null,
+          h('span', { class: 'row-s', style: 'display:block' }, plural(s.monthInvoices, 'invoice') + ' · ' + plural(s.monthDockets, 'docket') + ' this month')),
+        s.newCount + s.newDockets ? h('span', { class: 'pill pill-count' }, String(s.newCount + s.newDockets)) : null,
         icon('chevR', 18))))),
     h('div', { class: 'btn-row' },
       h('a', { class: 'btn', href: '#/office/sites' }, icon('sliders', 16), 'Manage sites'),
-      h('a', { class: 'btn', href: S.cfg.docketsUrl, target: '_blank', rel: 'noopener' }, icon('fuel', 16), 'Fuel Dockets', icon('ext', 14)),
       S.cfg.officePin ? h('button', { class: 'btn', onclick: lockOffice }, icon('logout', 16), 'Lock') : null),
     h('p', { class: 'footer' }, h('b', null, 'SUNSTATE PETROLEUM'), ' · Site Invoices'));
 }
 function markPrompt(pm) {
   return h('div', { class: 'note ok', style: 'align-items:center;flex-wrap:wrap' },
     icon('check', 16),
-    h('span', { style: 'flex:1;min-width:180px' }, 'Downloaded ' + plural(pm.length, 'invoice') + '. Mark them as processed?'),
+    h('span', { style: 'flex:1;min-width:180px' }, 'Downloaded ' + plural(pm.length, nounFor(pm)) + '. Mark them as processed?'),
     h('span', { style: 'display:flex;gap:8px' },
       h('button', { class: 'btn btn-sm', onclick: () => { S.off.pendingMark = null; render(); } }, 'Not now'),
       h('button', { class: 'btn btn-sm btn-dark', onclick: () => markMany(pm, 'processed') }, 'Mark processed')));
 }
 async function lockOffice() {
   try { await api('/api/logout', { json: {} }); } catch (e) {}
-  S.cfg.officeOk = false; S.off.ov = null; S.off.inv = {}; render();
+  S.cfg.officeOk = false; S.off.ov = null; S.off.recs = {}; render();
 }
 async function markMany(items, status) {
-  S.busy = { title: 'Updating ' + plural(items.length, 'invoice') + '…' }; render();
+  S.busy = { title: 'Updating ' + plural(items.length, nounFor(items)) + '…' }; render();
   try {
-    for (let i = 0; i < items.length; i += 300) await api('/api/office/status', { json: { status, items: items.slice(i, i + 300).map((r) => ({ site: r.site, month: r.month, id: r.id })) } });
+    for (let i = 0; i < items.length; i += 300) await api('/api/office/status', { json: { status, items: items.slice(i, i + 300).map((r) => ({ kind: r.kind || 'invoice', site: r.site, month: r.month, id: r.id })) } });
     S.off.pendingMark = null;
-    toast(plural(items.length, 'invoice') + ' marked ' + (status === 'processed' ? 'processed' : 'new') + '.');
+    toast(plural(items.length, nounFor(items)) + ' marked ' + (status === 'processed' ? 'processed' : 'new') + '.');
   } catch (e) { toast(e.message, true); }
   S.busy = null;
-  S.off.ov = null; S.off.inv = {};
+  S.off.ov = null; S.off.recs = {};
   onRoute();
 }
 
@@ -965,25 +1125,31 @@ async function markMany(items, status) {
 function officeSiteView(siteId) {
   const site = S.cfg.sites.find((s) => s.id === siteId);
   if (!site) return h('main', { class: 'page' }, h('a', { class: 'back', href: '#/office' }, icon('chevL', 18), 'All sites'), h('div', { class: 'card' }, h('div', { class: 'empty' }, 'That site was not found.')));
-  const tab = S.off.tab;
+  const kind = S.off.tab;
+  const ov = ovSite(site.id);
+  const tabBtn = (k) => {
+    const n = ov ? (k === 'docket' ? ov.newDockets : ov.newCount) : 0;
+    return h('button', { class: kind === k ? 'on' : '', role: 'tab', 'aria-selected': kind === k ? 'true' : 'false', onclick: () => { S.off.tab = k; if (!S.off.months[k + '|' + site.id]) loadMonths(site.id, k); render(); } },
+      icon(KIND[k].icon, 16), KIND[k].tab, n ? h('span', { class: 'pill pill-count tab-n' }, String(n)) : null);
+  };
   return h('main', { class: 'page stack wide' },
     h('div', null,
       h('a', { class: 'back', href: '#/office' }, icon('chevL', 18), 'All sites'),
       h('h1', { class: 'h1' }, site.name),
       site.archived ? h('span', { class: 'pill pill-grey', style: 'margin-top:6px' }, 'Archived') : null),
-    h('div', { class: 'tabs', role: 'tablist' },
-      h('button', { class: tab === 'invoices' ? 'on' : '', role: 'tab', onclick: () => { S.off.tab = 'invoices'; render(); } }, icon('file', 16), 'Invoices'),
-      h('button', { class: tab === 'dockets' ? 'on' : '', role: 'tab', onclick: () => { S.off.tab = 'dockets'; if (!S.off.dk) loadDocketLocations(); render(); } }, icon('fuel', 16), 'Fuel dockets')),
-    tab === 'dockets' ? siteDockets(site) : siteInvoices(site));
+    h('div', { class: 'tabs', role: 'tablist' }, tabBtn('invoice'), tabBtn('docket')),
+    siteRecords(site, kind));
 }
 
-function siteInvoices(site) {
-  const months = S.off.months[site.id];
+function siteRecords(site, kind) {
+  const K = KIND[kind];
+  const mkey = kind + '|' + site.id;
+  const months = S.off.months[mkey];
   if (!months) return h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading…'));
-  const month = S.off.month[site.id] || months[0];
-  const list = S.off.inv[site.id + '|' + month];
-  const monthChips = h('div', { class: 'scroller' }, months.map((m) => h('button', { class: 'sel' + (m === month ? ' on' : ''), onclick: () => { S.off.month[site.id] = m; render(); if (!S.off.inv[site.id + '|' + m]) loadInvoices(site.id, m); } }, fmtMonth(m))));
-  if (!list) return h('div', { class: 'stack' }, monthChips, h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading invoices…')));
+  const month = S.off.month[mkey] || months[0];
+  const list = S.off.recs[mkey + '|' + month];
+  const monthChips = h('div', { class: 'scroller' }, months.map((m) => h('button', { class: 'sel' + (m === month ? ' on' : ''), onclick: () => { S.off.month[mkey] = m; render(); if (!S.off.recs[mkey + '|' + m]) loadRecords(site.id, kind, m); } }, fmtMonth(m))));
+  if (!list) return h('div', { class: 'stack' }, monthChips, h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading ' + K.noun + 's…')));
   if (list.error) return h('div', { class: 'stack' }, monthChips, h('div', { class: 'err' }, icon('alert', 18), list.error));
   const f = S.off.filter;
   const counts = { new: list.filter((r) => r.status === 'new').length, processed: list.filter((r) => r.status === 'processed').length, all: list.length };
@@ -995,113 +1161,129 @@ function siteInvoices(site) {
     h('div', { class: 'tabs' }, ['new', 'all', 'processed'].map((k) => h('button', { class: f === k ? 'on' : '', onclick: () => { S.off.filter = k; render(); } }, label[k] + ' (' + counts[k] + ')'))),
     S.off.pendingMark ? markPrompt(S.off.pendingMark) : null,
     shown.length ? h('div', { class: 'btn-row' },
-      h('button', { class: 'btn btn-dark btn-sm', onclick: () => downloadZip(withSite, site.name + ' ' + fmtMonth(month) + ' ' + label[f] + '.zip', f !== 'processed') }, icon('download', 16), 'Download ' + shown.length + ' as ZIP'),
+      h('button', { class: 'btn btn-dark btn-sm', onclick: () => downloadZip(withSite, site.name + ' ' + K.tab + ' ' + fmtMonth(month) + ' ' + label[f] + '.zip', f !== 'processed') }, icon('download', 16), 'Download ' + shown.length + ' as ZIP'),
       f === 'new' ? h('button', { class: 'btn btn-sm', onclick: () => markMany(shown, 'processed') }, icon('check', 16), 'Mark all processed') : null) : null,
-    h('section', { class: 'card' }, shown.length ? h('div', { class: 'list' }, shown.map((r) => invoiceRow(r, site))) :
-      h('div', { class: 'empty' }, icon('file', 28), f === 'new' ? 'No new invoices for ' + fmtMonthLong(month) + '.' : 'No invoices for ' + fmtMonthLong(month) + '.')));
+    h('section', { class: 'card' }, shown.length ? h('div', { class: 'list' }, shown.map((r) => recordRow(r, site))) :
+      h('div', { class: 'empty' }, icon(K.icon, 28), (f === 'new' ? 'No new ' : 'No ') + K.noun + 's for ' + fmtMonthLong(month) + '.')));
 }
-function invoiceRow(r, site) {
-  const sub = [r.invoiceNo ? '#' + r.invoiceNo : null, r.total ? fmtMoney(r.total) : null, plural(r.pages, 'page'), fmtWhen(r.uploadedAt)].filter(Boolean).join(' · ');
-  return h('button', { class: 'row', onclick: () => openInvoice(r, site) },
-    h('span', { class: 'row-ic' }, icon('file', 19)),
+function recordRow(r, site) {
+  const docket = r.kind === 'docket';
+  const sub = (docket
+    ? [r.invoiceDate ? 'Delivered ' + fmtDay(r.invoiceDate) : null, r.invoiceNo ? '#' + r.invoiceNo : null, r.source === 'fueldockets' ? 'Imported' : null]
+    : [r.invoiceNo ? '#' + r.invoiceNo : null, r.total ? fmtMoney(r.total) : null, plural(r.pages, 'page'), fmtWhen(r.uploadedAt)]
+  ).filter(Boolean).join(' · ') || plural(r.pages, 'page');
+  return h('button', { class: 'row', onclick: () => openRecord(r, site) },
+    h('span', { class: 'row-ic' + (docket ? ' dk' : '') }, icon(KIND[r.kind || 'invoice'].icon, 19)),
     h('span', { class: 'row-main' },
       h('span', { class: 'row-t', style: 'display:block' }, r.supplier),
       h('span', { class: 'row-s', style: 'display:block' }, sub),
-      r.note ? h('span', { class: 'row-s', style: 'display:block;color:var(--amber)' }, '“' + r.note + '”') : null),
+      r.also ? h('span', { class: 'row-s', style: 'display:block' }, 'Split load with ' + r.also) : null,
+      r.note && r.source !== 'fueldockets' ? h('span', { class: 'row-s', style: 'display:block;color:var(--amber)' }, '“' + r.note + '”') : null),
     r.status === 'processed' ? h('span', { class: 'pill pill-done' }, 'Processed') : h('span', { class: 'pill pill-new' }, 'New'),
     icon('chevR', 18));
 }
 
-/* ---------- invoice sheet */
-function openInvoice(r, site) { S.sheet = { kind: 'invoice', rec: r, siteName: site.name, edit: false }; render(); }
-function invoiceSheet(s) {
+/* ---------- record sheet (invoice or docket) */
+function openRecord(r, site) { S.sheet = { kind: 'record', rec: r, siteName: site.name, edit: false }; render(); }
+function recordSheet(s) {
   const r = s.rec;
+  const K = KIND[r.kind || 'invoice'];
+  const docket = r.kind === 'docket';
   const pages = [];
   for (let i = 1; i <= r.pages; i++) pages.push(h('a', { href: pageUrl(r, i), target: '_blank', rel: 'noopener', title: 'Open page ' + i + ' full size' }, h('img', { src: pageUrl(r, i), alt: 'Page ' + i, loading: 'lazy' })));
   let details;
   if (s.edit) {
     const inp = (k, label, attrs) => h('label', { class: 'field' }, h('span', { class: 'label' }, label), h(attrs && attrs.tag || 'input', Object.assign({ class: 'input', id: 'e-' + k, value: r[k] || '' }, attrs || {}, { tag: null })));
     details = h('div', null,
-      inp('supplier', 'Supplier'), inp('invoiceNo', 'Invoice no.'), inp('invoiceDate', 'Invoice date', { type: 'date' }), inp('total', 'Total inc GST', { inputmode: 'decimal' }), inp('note', 'Note', { tag: 'textarea', rows: 2 }),
+      inp('supplier', 'Supplier'), inp('invoiceNo', K.refLabel), inp('invoiceDate', K.dateLabel, { type: 'date' }),
+      docket ? null : inp('total', 'Total inc GST', { inputmode: 'decimal' }),
+      inp('note', 'Note', { tag: 'textarea', rows: 2 }),
       h('div', { class: 'btn-row', style: 'margin-top:14px' },
         h('button', { class: 'btn', onclick: () => { s.edit = false; render(); } }, 'Cancel'),
-        h('button', { class: 'btn btn-primary', onclick: () => saveInvoiceEdits(s) }, 'Save')));
+        h('button', { class: 'btn btn-primary', onclick: () => saveRecordEdits(s) }, 'Save')));
   } else {
     details = h('dl', { class: 'dl' },
       h('dt', null, 'Site'), h('dd', null, s.siteName),
-      h('dt', null, 'Invoice no.'), h('dd', null, r.invoiceNo || '—'),
-      h('dt', null, 'Invoice date'), h('dd', null, r.invoiceDate ? fmtDay(r.invoiceDate) : '—'),
-      h('dt', null, 'Total'), h('dd', null, r.total ? fmtMoney(r.total) : '—'),
+      r.also ? [h('dt', null, 'Also filed under'), h('dd', null, r.also)] : null,
+      h('dt', null, K.refLabel), h('dd', null, r.invoiceNo || '—'),
+      h('dt', null, K.dateLabel), h('dd', null, r.invoiceDate ? fmtDay(r.invoiceDate) : '—'),
+      docket ? null : [h('dt', null, 'Total'), h('dd', null, r.total ? fmtMoney(r.total) : '—')],
       r.note ? [h('dt', null, 'Note'), h('dd', null, r.note)] : null,
-      h('dt', null, 'Sent by'), h('dd', null, (r.by || '—') + ', ' + fmtWhen(r.uploadedAt)),
+      r.source === 'fueldockets' ? [h('dt', null, 'Sent by'), h('dd', null, 'Old Fuel Dockets app')] : [h('dt', null, 'Sent by'), h('dd', null, (r.by || '—') + ', ' + fmtWhen(r.uploadedAt))],
       r.status === 'processed' && r.processedAt ? [h('dt', null, 'Processed'), h('dd', null, fmtWhen(r.processedAt))] : null);
   }
   return h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', onclick: (e) => e.stopPropagation() },
     h('div', { class: 'sheet-h' },
-      h('div', { class: 't' }, h('div', { class: 'row-t', style: 'font-size:17px' }, r.supplier), h('div', { style: 'margin-top:3px' }, r.status === 'processed' ? h('span', { class: 'pill pill-done' }, 'Processed') : h('span', { class: 'pill pill-new' }, 'New'))),
+      h('div', { class: 't' },
+        h('div', { class: 'row-t', style: 'font-size:17px' }, (docket ? 'Fuel docket · ' : '') + r.supplier),
+        h('div', { style: 'margin-top:3px' }, r.status === 'processed' ? h('span', { class: 'pill pill-done' }, 'Processed') : h('span', { class: 'pill pill-new' }, 'New'))),
       s.edit ? null : h('button', { class: 'iconbtn', onclick: () => { s.edit = true; render(); }, 'aria-label': 'Edit details' }, icon('edit', 16)),
       h('button', { class: 'iconbtn', onclick: closeSheet, 'aria-label': 'Close' }, icon('x', 18))),
     h('div', { class: 'sheet-b stack' },
       h('section', { class: 'card card-pad' }, details),
       h('div', { class: 'btn-row' },
-        h('button', { class: 'btn btn-primary', onclick: () => downloadInvoicePdf(r, s.siteName) }, icon('download', 16), 'Download PDF'),
+        h('button', { class: 'btn btn-primary', onclick: () => downloadPdf(r, s.siteName) }, icon('download', 16), 'Download PDF'),
         r.status === 'processed'
           ? h('button', { class: 'btn', onclick: () => setStatus(s, 'new') }, 'Mark as new')
           : h('button', { class: 'btn btn-dark', onclick: () => setStatus(s, 'processed') }, icon('check', 16), 'Mark processed')),
       h('div', { class: 'pages' }, pages),
-      h('button', { class: 'btn btn-danger btn-block', onclick: () => confirmDelete(s) }, icon('trash', 16), 'Delete invoice')));
+      h('button', { class: 'btn btn-danger btn-block', onclick: () => confirmDelete(s) }, icon('trash', 16), 'Delete ' + K.noun)));
 }
 async function setStatus(s, status) {
   try {
-    const d = await api('/api/office/update', { json: { site: s.rec.site, month: s.rec.month, id: s.rec.id, status } });
+    const d = await api('/api/office/update', { json: { kind: s.rec.kind, site: s.rec.site, month: s.rec.month, id: s.rec.id, status } });
     s.rec = d.record; updateLocalRecord(d.record);
     toast(status === 'processed' ? 'Marked as processed.' : 'Marked as new.');
   } catch (e) { toast(e.message, true); }
 }
-async function saveInvoiceEdits(s) {
+async function saveRecordEdits(s) {
   const val = (k) => (document.getElementById('e-' + k) || {}).value;
+  const body = { kind: s.rec.kind, site: s.rec.site, month: s.rec.month, id: s.rec.id, supplier: val('supplier'), invoiceNo: val('invoiceNo'), invoiceDate: val('invoiceDate'), note: val('note') };
+  if (s.rec.kind !== 'docket') body.total = val('total');
   try {
-    const d = await api('/api/office/update', { json: { site: s.rec.site, month: s.rec.month, id: s.rec.id, supplier: val('supplier'), invoiceNo: val('invoiceNo'), invoiceDate: val('invoiceDate'), total: val('total'), note: val('note') } });
+    const d = await api('/api/office/update', { json: body });
     s.rec = d.record; s.edit = false; updateLocalRecord(d.record); toast('Saved.');
   } catch (e) { toast(e.message, true); }
 }
 function confirmDelete(s) {
-  const r = s.rec, site = s.siteName;
-  openDialog('Delete this invoice?', r.supplier + (r.invoiceNo ? ' #' + r.invoiceNo : '') + ' from ' + site + ' and its ' + plural(r.pages, 'photo') + ' will be deleted for good.', [
+  const r = s.rec, site = s.siteName, K = KIND[r.kind || 'invoice'];
+  openDialog('Delete this ' + K.noun + '?', r.supplier + (r.invoiceNo ? ' #' + r.invoiceNo : '') + ' from ' + site + ' and its ' + plural(r.pages, 'photo') + ' will be deleted for good.' + (r.also ? ' The copies under ' + r.also + ' are kept.' : ''), [
     { label: 'Cancel', run: () => { S.sheet = s; render(); } },
     { label: 'Delete', danger: true, run: async () => {
       try {
-        await api('/api/office/delete', { json: { site: r.site, month: r.month, id: r.id } });
-        const key = r.site + '|' + r.month; if (Array.isArray(S.off.inv[key])) S.off.inv[key] = S.off.inv[key].filter((x) => x.id !== r.id);
-        S.off.ovStale = true; toast('Invoice deleted.');
+        await api('/api/office/delete', { json: { kind: r.kind, site: r.site, month: r.month, id: r.id } });
+        const key = r.kind + '|' + r.site + '|' + r.month; if (Array.isArray(S.off.recs[key])) S.off.recs[key] = S.off.recs[key].filter((x) => x.id !== r.id);
+        S.off.ovStale = true; toast(K.Noun + ' deleted.');
       } catch (e) { toast(e.message, true); }
     } }]);
 }
 
-/* ---------- downloads: PDF per invoice, ZIP of PDFs */
-function invoicePdfName(r) {
-  return safeName([r.invoiceDate || (r.uploadedAt || '').slice(0, 10), r.supplier, r.invoiceNo ? '#' + r.invoiceNo : null].filter(Boolean).join(' ')) + '.pdf';
+/* ---------- downloads: a PDF per invoice or docket, ZIP of PDFs */
+function pdfName(r) {
+  const docket = r.kind === 'docket';
+  return safeName([r.invoiceDate || (r.uploadedAt || '').slice(0, 10), docket ? 'Fuel docket' : null, r.supplier, r.invoiceNo ? '#' + r.invoiceNo : null].filter(Boolean).join(' ')) + '.pdf';
 }
-async function invoicePdfBytes(r) {
+async function pdfBytes(r) {
   const imgs = [];
   for (let i = 1; i <= r.pages; i++) imgs.push(await ensureJpeg(await fetchBytes(pageUrl(r, i))));
-  return buildPdf(imgs, { title: r.supplier + (r.invoiceNo ? ' #' + r.invoiceNo : '') });
+  return buildPdf(imgs, { title: (r.kind === 'docket' ? 'Fuel docket ' : '') + r.supplier + (r.invoiceNo ? ' #' + r.invoiceNo : '') });
 }
-async function downloadInvoicePdf(r, siteNm) {
+async function downloadPdf(r, siteNm) {
   S.busy = { title: 'Making PDF…' }; render();
-  try { saveBlob(new Blob([await invoicePdfBytes(r)], { type: 'application/pdf' }), safeName(siteNm) + ' ' + invoicePdfName(r)); }
+  try { saveBlob(new Blob([await pdfBytes(r)], { type: 'application/pdf' }), safeName(siteNm) + ' ' + pdfName(r)); }
   catch (e) { toast(e.message, true); }
   S.busy = null; render();
 }
 async function downloadZip(items, zipName, offerMark) {
   if (!items.length) return;
-  S.busy = { title: 'Preparing invoices', done: 0, total: items.length }; render();
+  const mixed = new Set(items.map((r) => r.kind || 'invoice')).size > 1;
+  S.busy = { title: 'Preparing PDFs', done: 0, total: items.length }; render();
   try {
     const files = []; const used = {};
     for (const r of items) {
-      let name = safeName(r.siteName || siteName(r.site)) + '/' + invoicePdfName(r);
+      let name = safeName(r.siteName || siteName(r.site)) + '/' + (mixed ? KIND[r.kind || 'invoice'].folder + '/' : '') + pdfName(r);
       if (used[name]) { used[name]++; name = name.replace(/\.pdf$/, ' (' + used[name] + ').pdf'); } else used[name] = 1;
-      files.push({ name, data: await invoicePdfBytes(r) });
+      files.push({ name, data: await pdfBytes(r) });
       S.busy.done++; render();
     }
     saveBlob(makeZip(files), safeName(zipName.replace(/\.zip$/, '')) + '.zip');
@@ -1203,72 +1385,6 @@ function makeZip(files) {
   return new Blob(parts.concat(central, [new Uint8Array(end.buffer)]), { type: 'application/zip' });
 }
 
-/* =========================================================== office: dockets tab */
-function siteDockets(site) {
-  if (!S.cfg.docketsLinked) return h('div', { class: 'card card-pad' }, h('div', { class: 'note' }, icon('link', 16), h('span', null, 'Fuel Dockets is not connected to this app yet. Add the DOCKETS service binding (see the README).')));
-  const full = ovSite(site.id);
-  if (!full) return h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading…'));
-  const linked = full.dockets || [];
-  if (!linked.length) {
-    return h('div', { class: 'card card-pad', style: 'text-align:center' },
-      h('p', { class: 'b' }, 'No Fuel Dockets locations linked'),
-      h('p', { class: 'lead', style: 'margin:4px 0 14px' }, 'Link the location name drivers use in Fuel Dockets so this site’s dockets show here.'),
-      h('a', { class: 'btn btn-dark', href: '#/office/sites' }, icon('link', 16), 'Link docket locations'));
-  }
-  if (S.off.dk === 'loading' || (!S.off.dk && !S.off.dkErr)) return h('div', { class: 'card' }, h('div', { class: 'empty pulse' }, 'Loading dockets from Fuel Dockets…'));
-  if (S.off.dkErr) return h('div', { class: 'err' }, icon('alert', 18), S.off.dkErr);
-  const locs = S.off.dk.filter((l) => linked.includes(l.name));
-  const entries = [];
-  locs.forEach((l) => l.suppliers.forEach((sp) => sp.dates.forEach((dt) => entries.push({ loc: l.name, sup: sp.name, date: dt, sortKey: dt.split('-').reverse().join('') }))));
-  entries.sort((a, b) => b.sortKey.localeCompare(a.sortKey) || a.sup.localeCompare(b.sup));
-  return h('div', { class: 'stack' },
-    h('div', { class: 'note ok' }, icon('link', 16), h('span', null, 'From Fuel Dockets: ', linked.map(docketName).join(', '))),
-    h('section', { class: 'card' }, entries.length ? h('div', { class: 'list' }, entries.map((e) => docketEntry(e, site))) : h('div', { class: 'empty' }, icon('fuel', 28), 'No dockets uploaded for this site yet.')),
-    h('a', { class: 'btn btn-block', href: S.cfg.docketsUrl, target: '_blank', rel: 'noopener' }, icon('fuel', 16), 'Open Fuel Dockets', icon('ext', 14)));
-}
-function ovSite(id) { return S.off.ov && S.off.ov.sites.find((s) => s.id === id); }
-function docketEntry(e, site) {
-  const key = e.loc + '|' + e.sup + '|' + e.date;
-  const open = S.off.dkOpen === key;
-  const photos = S.off.dkPhotos[key];
-  const [dd, mm, yy] = e.date.split('-');
-  const ymd = yy + '-' + mm + '-' + dd;
-  const row = h('button', { class: 'row', onclick: () => toggleDocket(e, key) },
-    h('span', { class: 'row-ic' }, icon('calendar', 18)),
-    h('span', { class: 'row-main' }, h('span', { class: 'row-t', style: 'display:block' }, fmtDay(ymd)), h('span', { class: 'row-s', style: 'display:block' }, (DOCKET_SUP[e.sup] || e.sup) + ' · ' + docketName(e.loc))),
-    icon(open ? 'chevL' : 'chevR', 18));
-  if (!open) return row;
-  let body;
-  if (!photos) body = h('p', { class: 'sm muted pulse' }, 'Loading photos…');
-  else if (photos.error) body = h('p', { class: 'sm', style: 'color:var(--red)' }, photos.error);
-  else if (!photos.length) body = h('p', { class: 'sm muted' }, 'No photos.');
-  else body = h('div', null,
-    h('div', { class: 'photos' }, photos.map((p) => h('a', { href: docketPhotoUrl(p.key), target: '_blank', rel: 'noopener' }, h('img', { src: docketPhotoUrl(p.key), alt: p.name, loading: 'lazy' })))),
-    h('button', { class: 'btn btn-dark btn-sm', style: 'margin-top:10px', onclick: () => downloadDocketPdf(e, photos, site) }, icon('download', 16), 'Download PDF'));
-  return h('div', null, row, h('div', { style: 'padding:4px 16px 16px 66px' }, body));
-}
-function docketPhotoUrl(key, dl) { return '/api/office/dockets/photo?key=' + encodeURIComponent(key) + (dl ? '&download=' + encodeURIComponent(dl) : ''); }
-async function toggleDocket(e, key) {
-  if (S.off.dkOpen === key) { S.off.dkOpen = null; render(); return; }
-  S.off.dkOpen = key; render();
-  if (S.off.dkPhotos[key] && !S.off.dkPhotos[key].error) return;
-  try {
-    const d = await api('/api/office/dockets/list?location=' + encodeURIComponent(e.loc) + '&supplier=' + encodeURIComponent(e.sup) + '&date=' + encodeURIComponent(e.date));
-    S.off.dkPhotos[key] = d.files;
-  } catch (ex) { S.off.dkPhotos[key] = { error: ex.message }; }
-  render();
-}
-async function downloadDocketPdf(e, photos, site) {
-  S.busy = { title: 'Making PDF…' }; render();
-  try {
-    const imgs = [];
-    for (const p of photos) imgs.push(await ensureJpeg(await fetchBytes(docketPhotoUrl(p.key))));
-    const [dd, mm, yy] = e.date.split('-');
-    saveBlob(new Blob([buildPdf(imgs, { title: 'Fuel docket ' + e.date })], { type: 'application/pdf' }), safeName(site.name + ' ' + yy + '-' + mm + '-' + dd + ' Fuel docket ' + (DOCKET_SUP[e.sup] || e.sup)) + '.pdf');
-  } catch (ex) { toast(ex.message, true); }
-  S.busy = null; render();
-}
-
 /* =========================================================== office: manage sites */
 function manageSitesView() {
   const ov = S.off.ov;
@@ -1276,30 +1392,13 @@ function manageSitesView() {
   const ta = h('textarea', { class: 'input', id: 'new-sites', rows: 3, placeholder: 'One site per line, e.g.\nGympie\nTanawha' });
   const addBox = h('section', { class: 'card card-pad' },
     h('h2', { class: 'h2' }, 'Add sites'),
-    h('p', { class: 'lead', style: 'margin-bottom:12px' }, 'Type one site per line. Staff will pick from this list.'),
+    h('p', { class: 'lead', style: 'margin-bottom:12px' }, 'Type one site per line. Staff and drivers pick from this list.'),
     ta,
     h('button', { class: 'btn btn-primary', style: 'margin-top:12px', onclick: async () => {
       const names = ta.value.split(/\n|,/).map((s) => s.trim()).filter(Boolean);
       if (!names.length) return;
       await siteAction({ action: 'add', names }, plural(names.length, 'site') + ' added.');
     } }, icon('plus', 18), 'Add'));
-
-  let docketBox = null;
-  if (S.cfg.docketsLinked) {
-    let content;
-    if (S.off.dk === 'loading' || !sitesFull) content = h('p', { class: 'sm muted pulse' }, 'Loading Fuel Dockets locations…');
-    else if (S.off.dkErr) content = h('div', { class: 'err' }, icon('alert', 18), S.off.dkErr);
-    else if (!S.off.dk || !S.off.dk.length) content = h('p', { class: 'sm muted' }, 'No locations in Fuel Dockets yet.');
-    else {
-      const linkedTo = {};
-      sitesFull.forEach((s) => (s.dockets || []).forEach((d) => { linkedTo[d] = s; }));
-      content = h('div', { class: 'list', style: 'margin:0 -16px -16px' }, S.off.dk.map((l) => docketLinkRow(l.name, linkedTo[l.name], sitesFull)));
-    }
-    docketBox = h('section', { class: 'card card-pad' },
-      h('h2', { class: 'h2' }, 'Fuel Dockets locations'),
-      h('p', { class: 'lead', style: 'margin-bottom:12px' }, 'Drivers type the location in Fuel Dockets. Link each one to a site so its dockets show next to that site’s invoices.'),
-      content);
-  }
 
   let list;
   if (!sitesFull) list = h('div', { class: 'empty pulse' }, 'Loading…');
@@ -1308,14 +1407,69 @@ function manageSitesView() {
     h('span', { class: 'row-ic' }, icon(s.archived ? 'archive' : 'store', 19)),
     h('span', { class: 'row-main' },
       h('span', { class: 'row-t', style: 'display:block' + (s.archived ? ';color:var(--muted)' : '') }, s.name),
-      h('span', { class: 'row-s', style: 'display:block' }, s.archived ? 'Archived · hidden from staff' : (s.dockets.length ? 'Dockets: ' + s.dockets.map(docketName).join(', ') : 'No dockets linked'))),
+      h('span', { class: 'row-s', style: 'display:block' }, s.archived ? 'Archived · hidden from staff' : (s.dockets.length ? 'Old Fuel Dockets name: ' + s.dockets.map(docketName).join(', ') : 'Active'))),
     h('button', { class: 'iconbtn', title: 'Rename', 'aria-label': 'Rename ' + s.name, onclick: () => renameSite(s) }, icon('edit', 16)),
     h('button', { class: 'iconbtn', title: s.archived ? 'Restore' : 'Archive', 'aria-label': (s.archived ? 'Restore ' : 'Archive ') + s.name, onclick: () => siteAction({ action: 'update', id: s.id, archived: !s.archived }, s.archived ? 'Site restored.' : 'Site archived.') }, icon(s.archived ? 'refresh' : 'archive', 16)))));
 
   return h('main', { class: 'page stack wide' },
     h('div', null, h('a', { class: 'back', href: '#/office' }, icon('chevL', 18), 'Office'), h('h1', { class: 'h1' }, 'Manage sites')),
-    addBox, docketBox,
-    h('section', { class: 'card' }, h('div', { class: 'card-h' }, h('h2', null, 'Sites'), sitesFull ? h('span', { class: 'sm muted' }, String(sitesFull.length)) : null), list));
+    addBox,
+    h('section', { class: 'card' }, h('div', { class: 'card-h' }, h('h2', null, 'Sites'), sitesFull ? h('span', { class: 'sm muted' }, String(sitesFull.length)) : null), list),
+    S.cfg.oldDockets ? importBox(sitesFull) : null);
+}
+
+/* ---------- one-off import from the old Fuel Dockets app */
+async function loadImportPlan() {
+  if (S.off.imp && S.off.imp.loading) return;
+  S.off.imp = Object.assign({}, S.off.imp, { loading: true, error: '' }); render();
+  try { const d = await api('/api/office/import/plan'); S.off.imp = { plan: d }; }
+  catch (e) { S.off.imp = { error: e.message }; }
+  render();
+}
+function importBox(sitesFull) {
+  const imp = S.off.imp;
+  let content;
+  if (!imp || (imp.loading && !imp.plan) || !sitesFull) content = h('p', { class: 'sm muted pulse' }, 'Checking the old Fuel Dockets app…');
+  else if (imp.error) content = h('div', { class: 'err' }, icon('alert', 18), imp.error);
+  else {
+    const plan = imp.plan;
+    const linkedTo = {};
+    sitesFull.forEach((s) => (s.dockets || []).forEach((d) => { linkedTo[d] = s; }));
+    const todo = plan.entries.filter((e) => !e.done);
+    const done = plan.entries.length - todo.length;
+    content = [
+      plan.locations.length
+        ? h('div', { class: 'list', style: 'margin:0 -16px' }, plan.locations.map((name) => docketLinkRow(name, linkedTo[name], sitesFull)))
+        : h('p', { class: 'sm muted' }, 'The old app has no dockets.'),
+      plan.locations.length ? h('div', { class: 'sep' }) : null,
+      todo.length
+        ? h('div', null,
+          h('p', { class: 'sm', style: 'margin-bottom:10px' }, plural(todo.length, 'docket') + ' ready to bring across' + (done ? ' (' + done + ' already here)' : '') + '. They are filed under the linked sites and marked processed.'),
+          plan.unlinked.length ? h('p', { class: 'sm', style: 'color:var(--amber);margin-bottom:10px' }, plural(plan.unlinked.length, 'location') + ' not linked yet. Their dockets stay behind until you link them.') : null,
+          h('button', { class: 'btn btn-primary', onclick: () => runImport(todo) }, icon('download', 16), 'Bring across ' + plural(todo.length, 'docket')))
+        : plan.locations.length
+          ? h('p', { class: 'sm' }, plan.entries.length ? 'All ' + plural(plan.entries.length, 'docket') + ' from linked locations are here.' + (plan.unlinked.length ? ' Link the remaining locations to bring theirs across.' : '') : 'Link the locations above to bring their dockets across.')
+          : null,
+    ];
+  }
+  return h('section', { class: 'card card-pad' },
+    h('h2', { class: 'h2' }, 'Old Fuel Dockets app'),
+    h('p', { class: 'lead', style: 'margin-bottom:12px' }, 'Dockets now go straight into this app. To keep the history, link each location name used in the old app to a site, then bring its dockets across. Running it again only adds what is missing.'),
+    content);
+}
+async function runImport(entries) {
+  S.busy = { title: 'Bringing dockets across', done: 0, total: entries.length }; render();
+  let failed = 0, lastErr = '';
+  for (const e of entries) {
+    try { await api('/api/office/import/one', { json: { loc: e.loc, sup: e.sup, date: e.date } }); }
+    catch (ex) { failed++; lastErr = ex.message; if (ex.status === 401) break; }
+    if (S.busy) { S.busy.done++; render(); }
+  }
+  S.busy = null;
+  S.off.ovStale = true; S.off.recs = {}; S.off.months = {};
+  if (failed) toast(plural(failed, 'docket') + ' could not be brought across: ' + lastErr + ' Try again to retry them.', true);
+  else toast(plural(entries.length, 'docket') + ' brought across.');
+  loadImportPlan();
 }
 function suggestSite(docket, sites) {
   const strip = (s) => s.toLowerCase().replace(/#\s*\d+/g, '').replace(/\b(shell|liberty|caltex|bp|ampol|puma|united|metro|mobil|7-eleven|sunstate|ssp|servo|service station|fuel)\b/g, '').replace(/[^a-z0-9]/g, '');
@@ -1334,7 +1488,7 @@ function suggestSite(docket, sites) {
 function docketLinkRow(name, site, sites) {
   if (site) {
     return h('div', { class: 'row' },
-      h('span', { class: 'row-ic' }, icon('fuel', 18)),
+      h('span', { class: 'row-ic dk' }, icon('fuel', 18)),
       h('span', { class: 'row-main' }, h('span', { class: 'row-t', style: 'display:block' }, docketName(name)), h('span', { class: 'row-s', style: 'display:block' }, 'Linked to ' + site.name)),
       h('button', { class: 'btn btn-sm', onclick: () => siteAction({ action: 'update', id: site.id, dockets: site.dockets.filter((d) => d !== name) }, 'Unlinked.') }, 'Unlink'));
   }
@@ -1366,9 +1520,10 @@ async function siteAction(body, okMsg) {
   try {
     const d = await api('/api/office/sites', { json: body });
     S.cfg.sites = d.sites.map((s) => ({ id: s.id, name: s.name, archived: !!s.archived }));
-    S.off.inv = {};
+    S.off.recs = {};
     toast(okMsg);
     loadOverview();
+    if (S.route[1] === 'sites' && S.cfg.oldDockets) loadImportPlan();
   } catch (e) { toast(e.message, true); }
 }
 

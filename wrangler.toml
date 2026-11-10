@@ -14,14 +14,12 @@ enabled = true
 binding = "INVOICES"
 bucket_name = "sunstate-invoices"
 
-# Connects to the existing Fuel Dockets Worker: shows each site's dockets in the office view and
-# lets invoice photos be read through Fuel Dockets' Claude proxy. "fueldockets" must match the
-# name of that Worker in Cloudflare (it is the first part of its workers.dev address).
-
 [vars]
-# Where the "Fuel delivery docket" buttons send people.
+# The old Fuel Dockets app. Only used to bring its existing dockets across (Office > Manage sites)
+# and, until this Worker has its own ANTHROPIC_API_KEY secret, to read photos through its Claude
+# connection. Once both are done the old app can be switched off.
 DOCKETS_URL = "https://fueldockets.jaidenbanks88.workers.dev"
-# Set to "off" to stop reading invoice photos automatically.
+# Set to "off" to stop reading invoice and docket photos automatically.
 AUTOFILL = "on"
 
 # Lets index.js import the app page as text and the logo images as bytes.
